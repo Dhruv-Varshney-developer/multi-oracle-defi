@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+//using chainlink VRF v2.5 that replaces both VRF v1 and v2 on November 29, 2024
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract NFTMintingWithVRF is ERC721, VRFConsumerBaseV2 {
+contract NFTMintingWithVRF is ERC721, VRFConsumerBaseV2Plus {
     //vrf variables
-    VRFCoordinatorV2Interface COORDINATOR;
     uint64 subscriptionId;
     bytes32 keyHash;
     uint256 public requestId;
@@ -15,7 +15,6 @@ contract NFTMintingWithVRF is ERC721, VRFConsumerBaseV2 {
     //track mint tokens
     uint256 public tokenCounter;
     mapping(uint256 => uint256) public tokenIdToRandomNumber;
-    uint256[] public randomNumbers;
 
     //events
     event RequestedNFT(uint256 indexed requestId);
@@ -25,32 +24,32 @@ contract NFTMintingWithVRF is ERC721, VRFConsumerBaseV2 {
         address _vrfCoordinator, 
         bytes32 _keyHash, 
         uint64 _subscriptionId
-    ) VRFConsumerBaseV2(_vrfCoordinator) ERC721("RandomNFT", "RNFT"){
-        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
+    ) VRFConsumerBaseV2Plus(_vrfCoordinator) ERC721("RandomNFT", "RNFT"){
         keyHash = _keyHash;
         subscriptionId = _subscriptionId;
         tokenCounter = 0; //init the counter
     }
 
-    function mintNFT() public returns(bytes32) {
+    function mintNFT() public {
         //request random num
-        requestId = COORDINATOR.requestRandomWords(
-            keyHash,
-            subscriptionId,
-            3, // minimum confirmations
-            200000, // gas limit set by default
-            1 // number of random words
+        requestId = s_vrfCoordinator.requestRandomWords(
+                VRFV2PlusClient.RandomWordsRequest({
+                keyHash: keyHash,
+                subId: subscriptionId,
+                requestConfirmations: 3,
+                callbackGasLimit: 200000, // gas limit set by default
+                numWords: 1,
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: true}))
+            })
         );
         //finally, we emit an event that a requestId has been sent
         emit RequestedNFT(requestId);
     }
 
-    function fulfillRandomWords(uint256, uint256[] memory randomWords) internal override {
-        randomNumbers.push(randomWords[0]); //save random num
+    function fulfillRandomWords(uint256, uint256[] calldata randomWords) internal override {
         tokenIdToRandomNumber[tokenCounter] = randomWords[0];
-        _safeMint(msg.sender, tokenCounter); //mint NFT
-
+        _safeMint(msg.sender, tokenCounter);
         emit ReturnedNFT(tokenCounter);
-        tokenCounter++; //update counter
+        tokenCounter++;
     }
 }
