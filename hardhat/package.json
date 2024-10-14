@@ -4,6 +4,9 @@
     "hardhat": "^2.22.13"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.2.0"
+    "@chainlink/contracts": "^1.2.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.11",
+    "@okxweb3/hardhat-explorer-verify": "^1.6.5",
+    "dotenv": "^16.4.5"
   }
 }
