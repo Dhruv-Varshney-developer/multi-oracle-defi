@@ -4,10 +4,12 @@ require("@nomicfoundation/hardhat-toolbox");
 module.exports = {
   solidity: "0.8.27",
   networks: {
-    hardhat: {
-      forking: {
-        url: "https://polygon-amoy.g.alchemy.com/v2/API_KEY", 
+    amoy: {
+        url: "https://polygon-amoy.g.alchemy.com/v2/ALCHEMY_KEY", 
+        accounts: [`0x${PRIVATE_KEY}`],
       },
     },
-  },
+    etherscan: {
+      apiKey: 'API_KEY', 
+    },
 };

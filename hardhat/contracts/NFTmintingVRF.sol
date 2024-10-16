@@ -125,3 +125,4 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         return (request.fulfilled, request.randomWords);
     }
 }
+
