@@ -117,45 +117,59 @@ const NFT = () => {
   };
  //------------------------------------------------------------------------------------------
   // Request random words (using `useWriteContract`)
-  const { data: requestData, write: requestRandomWords } = useWriteContract({
+   const { data: requestData, write: writeRequestRandomWords } = useWriteContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
     functionName: 'requestRandomWords',
     onMutate: () => {
-      setStatus('Requesting random words...');
-      setLoading(true);
+      setStatus('Sending request for random words...');
+      setLoading(true); 
       setStep('requestRandomWords');
     },
     onSuccess: (data) => {
-      setTransactionHash(data.hash);
+      console.log('Transaction sent:', data);
+      setTransactionHash(data.hash); 
       setStatus('Transaction sent. Waiting for confirmation...');
     },
     onError: (error) => {
-      console.error("Error during request:", error);
-      setStatus('Error during request. See console for details.');
-      setLoading(false);
+      console.error('Error requesting random words:', error);
+      setStatus('Error requesting random words. See console for details.');
+      setLoading(false); 
     }
   });
 
-  // Wait for transaction receipt (for requesting random words)
-  const { isSuccess: requestSuccess } = useWaitForTransactionReceipt({
-    hash: requestData?.hash,
+  // Handle random words request
+  const requestRandomWords = async () => {
+    try {
+      const result = await writeRequestRandomWords(); 
+      const data = result?.data; 
+      console.log("Random Words Request data:", data);
+
+      setTransactionHash(result?.hash || ''); 
+      setStatus('Request successful. Waiting for confirmation...');
+    } catch (error) {
+      console.error('Error in requestRandomWords function:', error);
+      setStatus('Error during the request.');
+    }
+  };
+
+  const { isSuccess } = useWaitForTransactionReceipt({
+    hash: transactionHash, 
     onSuccess: (data) => {
       const event = data.logs.find(log => log.event === 'RequestSent');
       const id = event?.args?.requestId;
-      setRequestId(id);
-      setTransactionHash(data.transactionHash);
+      setRequestId(id); 
       setStatus(`Request confirmed. RequestId: ${id}. You can now mint your NFT.`);
-      setLoading(false); // Stop loading
+      setLoading(false); 
       setStep('requestSuccess');
     },
     onError: (error) => {
-      console.error("Error confirming request:", error);
+      console.error('Error confirming request:', error);
       setStatus('Error confirming request. See console for details.');
-      setLoading(false);
+      setLoading(false); 
     }
   });
-
+  
   //------------------------------------------------------------------------------------------
   // Mint NFT using requestId (using `useWriteContract`)
   const { data: mintData, write: mintNFT } = useWriteContract({
@@ -204,10 +218,10 @@ const NFT = () => {
 
       {/* Center Panel - Interaction Buttons */}
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30%' }}>
-        <Button
+      <Button
           variant="contained"
           color="primary"
-          onClick={requestRandomWords}
+          onClick={requestRandomWords} 
           disabled={loading}
           sx={{ marginBottom: "1rem" }}
         >
@@ -228,7 +242,7 @@ const NFT = () => {
           onClick={mintNFT}
           disabled={!inputRequestId || loading}
         >
-          {loading && step === 'mintNFT' ? <CircularProgress size={20} /> : 'Mint NFT'}
+          {loading ? <CircularProgress size={20} /> : 'Mint NFT'}
         </Button>
 
           {/* Check NFT Balance Button */}
