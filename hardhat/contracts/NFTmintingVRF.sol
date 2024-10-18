@@ -26,7 +26,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     mapping(uint256 => RequestStatus) public s_requests; //requestId --> requestStatus
 
     //base image of LabsNFTs
-    string private _imageURI = "ipfs.io/ipfs/QmVjJtouNYv89rqPiXoE6afBsasLVjNNj87K5cJy9GzS4Y";
+    string private _imageURI = "https://ipfs.io/ipfs/QmVjJtouNYv89rqPiXoE6afBsasLVjNNj87K5cJy9GzS4Y";
 
     struct LabsNFT{
         uint256 series;
@@ -44,13 +44,13 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
     event NFTMinted(uint256 tokenId, address owner);
 
-    constructor()ERC721("RandomNFT", "RNFT") VRFConsumerBaseV2Plus(0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2) {
+    constructor()ERC721("LabsNFT", "LNFT") VRFConsumerBaseV2Plus(0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2) {
         subscriptionId = 103476436659143114776284521134562088597934666786628593221376876035364487025273;
         keyHash = 0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899;
         tokenCounter = 0;
     }
 
-    function requestRandomWords() external onlyOwner returns (uint256 requestId){
+    function requestRandomWords() external onlyOwner{
         requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
@@ -90,7 +90,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         return string(abi.encodePacked("data:application/json;base64,", json));
     }
 
-    function mintNFT(uint256 _requestId) public returns(uint256){
+    function mintNFT(uint256 _requestId) public {
         //Verify request has been fulfilled
         (bool fulfilled, uint256[] memory randomWords) = getRequestStatus(_requestId);
         require(fulfilled, "Randomness not fulfilled");
