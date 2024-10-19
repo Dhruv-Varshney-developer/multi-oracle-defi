@@ -2,26 +2,38 @@
 pragma solidity ^0.8.7;
 
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract SimpleUSDToken is ERC20 {
+    constructor() ERC20("Simple USD Token", "SUSD") {
+        // Mint some initial tokens for the contract's liquidity pool
+        _mint(address(this), 1000000 * 10**18); // 1 million SUSD tokens
+    }
+
+    // Mint function to mint new tokens (for simplicity)
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
 
 contract LendingBorrowing {
     struct User {
         uint256 collateralETH;
         uint256 borrowedAmountUSD;
+        uint256 lastBorrowTimestamp; // Track when user last borrowed
     }
 
     mapping(address => User) public users;
     uint256 public constant collateralFactor = 20; // 20% collateral factor
     uint256 public interestRate = 5; // 5% interest on borrowed amount
-
-    address public priceFeedAddress;
     AggregatorV3Interface internal priceFeed;
+    SimpleUSDToken public susdToken;
 
-    // Event to log received ETH
     event Received(address indexed sender, uint256 amount);
 
-    constructor(address _priceFeedAddress) {
-        priceFeedAddress = _priceFeedAddress;
+    constructor(address _priceFeedAddress, address _tokenAddress) {
         priceFeed = AggregatorV3Interface(_priceFeedAddress);
+        susdToken = SimpleUSDToken(_tokenAddress);
     }
 
     // Deposit collateral (ETH) by the user
@@ -33,8 +45,7 @@ contract LendingBorrowing {
     // Function to get the latest ETH/USD price
     function getLatestPrice() public view returns (uint256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
-        uint256 ethPriceAdjusted = uint256(price) / 1e8; // Adjust for 8 decimals
-        return ethPriceAdjusted; // Return price in USD
+        return uint256(price);
     }
 
     // Function to view the maximum borrowable USD based on the user's collateral
@@ -43,72 +54,62 @@ contract LendingBorrowing {
         require(ethPriceUSD > 0, "Invalid price feed");
 
         // Calculate maximum borrowable USD based on user's collateral
-        uint256 maxBorrowUSD = (((users[msg.sender].collateralETH *
-            ethPriceUSD) / 1e18) * collateralFactor) / 100;
+        uint256 maxBorrowUSD = (((users[msg.sender].collateralETH * (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
 
         return maxBorrowUSD;
     }
 
-    // Borrow function
+    // Borrow function (user borrows SUSD token instead of ETH)
     function borrow(uint256 _amountUSD) external {
         uint256 maxBorrowUSD = getMaxBorrowAmount();
-        require(_amountUSD <= maxBorrowUSD, "Not enough collateral");
-
-        // Calculate the equivalent amount of ETH to borrow
-        uint256 ethPriceUSD = getLatestPrice();
-        uint256 amountETH = (_amountUSD * 1e18) / ethPriceUSD;
-
-        // Check if the contract has enough ETH to provide the loan
-        require(
-            address(this).balance >= amountETH,
-            "Contract does not have enough ETH"
-        );
-
-        // Update the user's borrowed amount and transfer ETH to the borrower
-        users[msg.sender].borrowedAmountUSD += _amountUSD;
-        payable(msg.sender).transfer(amountETH);
-    }
-
-    // Function to calculate the repayment amount in ETH
-    function calculateRepaymentAmount(uint256 _amountUSD)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 repaymentAmount = _amountUSD +
-            ((_amountUSD * interestRate) / 100);
-
-        // Convert the repayment amount to ETH
-        uint256 ethPriceUSD = getLatestPrice();
-        uint256 repaymentETH = (repaymentAmount * 1e18) / ethPriceUSD;
-
-        return repaymentETH;
-    }
-
-    // Repay borrowed amount
-    function repay(uint256 _amountUSD) external payable {
-        uint256 repaymentETH = calculateRepaymentAmount(_amountUSD);
-        require(
-            msg.value >= repaymentETH,
-            "Insufficient ETH sent for repayment"
-        );
+        require(_amountUSD <= maxBorrowUSD, "Not enough ETH collateral");
 
         // Update the user's borrowed amount
-        users[msg.sender].borrowedAmountUSD -= _amountUSD;
+        users[msg.sender].borrowedAmountUSD += _amountUSD;
+        users[msg.sender].lastBorrowTimestamp = block.timestamp;
+
+        // Transfer SUSD tokens to the user
+        susdToken.mint(msg.sender, _amountUSD * 10**18); // SUSD follows 18 decimals
     }
+
+    // Function to calculate total repayment amount based on total borrowed
+    function calculateRepaymentAmount(address user) public view returns (uint256) {
+        User memory userInfo = users[user];
+
+        uint256 timeElapsed = block.timestamp - userInfo.lastBorrowTimestamp;
+        uint256 interest = (userInfo.borrowedAmountUSD * interestRate * timeElapsed) / (365 days * 100);
+
+        return userInfo.borrowedAmountUSD + interest;
+    }
+
+    /// Repay borrowed amount (using SUSD tokens)
+function repay(uint256 _amountUSD) external {
+    require(users[msg.sender].borrowedAmountUSD > 0, "No debt to repay");
+
+    // Get the total repayment amount (including interest)
+    uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
+
+    // Check if the repayment amount is less than or equal to the total outstanding debt
+    require(_amountUSD <= totalRepayment, "Amount exceeds total debt");
+
+    // Transfer the SUSD tokens from the user to the contract
+    require(susdToken.transferFrom(msg.sender, address(this), _amountUSD * 10**18), "Transfer failed");
+
+    // Update the user's debt
+    users[msg.sender].borrowedAmountUSD -= _amountUSD;
+
+    // If debt is fully repaid, reset last borrow timestamp
+    if (users[msg.sender].borrowedAmountUSD == 0) {
+        users[msg.sender].lastBorrowTimestamp = 0;
+    }
+}
 
     // Withdraw collateral function
     function withdrawCollateral(uint256 _amountETH) external {
         uint256 maxBorrowUSD = getMaxBorrowAmount();
-        require(
-            users[msg.sender].borrowedAmountUSD <= maxBorrowUSD,
-            "Can't withdraw, collateral locked"
-        );
+        require(users[msg.sender].borrowedAmountUSD <= maxBorrowUSD, "Can't withdraw, collateral locked");
 
-        require(
-            users[msg.sender].collateralETH >= _amountETH,
-            "Not enough collateral"
-        );
+        require(users[msg.sender].collateralETH >= _amountETH, "Not enough collateral deposited");
 
         // Update user's collateral balance and transfer ETH back to the user
         users[msg.sender].collateralETH -= _amountETH;
