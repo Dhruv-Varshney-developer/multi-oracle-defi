@@ -1,14 +1,14 @@
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { sepolia,  polygonAmoy } from "wagmi/chains";
+import {   polygonAmoy } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import React from "react";
 
 export const config = createConfig(
   getDefaultConfig({
-    chains: [sepolia, polygonAmoy],
+    chains: [ polygonAmoy],
     transports: {
-      [sepolia.id]: http(`https://rpc.sepolia.org`),
+      
       [polygonAmoy.id]: http(`https://rpc-amoy.polygon.technology`),
       
     },
