@@ -29,8 +29,8 @@ contract LendingBorrowing {
 
     event Received(address indexed sender, uint256 amount);
 
-    constructor(address _priceFeedAddress, address _tokenAddress) {
-        priceFeed = AggregatorV3Interface(_priceFeedAddress);
+    constructor(address priceFeedAddress, address _tokenAddress) {
+        priceFeed = AggregatorV3Interface(priceFeedAddress);
         susdToken = SimpleUSDToken(_tokenAddress);
     }
 

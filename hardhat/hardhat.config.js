@@ -1,23 +1,27 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
+require("@nomicfoundation/hardhat-verify");
+
 
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: "0.8.27",
+  settings:{
+    optimizer:{
+      enabled: true,
+      runs: 200,
+    }
+  },
   networks: {
-    sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/wrP-BqmYaxAGyt3187Hf_hPUbv4BQrVb`,
-      accounts: [process.env.privateKey],
-    },
-    amoy: {
-      url: "https://polygon-amoy.g.alchemy.com/v2/wrP-BqmYaxAGyt3187Hf_hPUbv4BQrVb",
-      accounts: [process.env.privateKey],
+    polygonAmoy: {
+      url: process.env.RPC_URL,
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 80002
     },
   },
   etherscan: {
     apiKey: {
-      sepolia: process.env.ETHERSCAN_API_KEY,
-    }
-  }
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY
+    }}
 };
