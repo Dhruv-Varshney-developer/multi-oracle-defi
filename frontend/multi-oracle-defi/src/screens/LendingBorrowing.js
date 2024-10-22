@@ -6,7 +6,7 @@ import {
   useWaitForTransactionReceipt,
   useBalance,
 } from "wagmi";
-import { parseEther } from "viem";
+import { parseEther, formatEther } from "viem";
 import { Box, Typography, Container, Grid } from "@mui/material";
 import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
@@ -34,6 +34,7 @@ const LendingBorrowing = () => {
     address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "getMaxBorrowAmount",
+    account : address,
   });
 
   const { data: userData } = useReadContract({
@@ -168,7 +169,7 @@ const LendingBorrowing = () => {
                 {
                   label: "Protocol ETH Balance",
                   value: contractETHBalance
-                    ? `${Number(contractETHBalance.value)} ETH`
+                    ? `${Number(formatEther(contractETHBalance.value))} ETH`
                     : "Loading...",
                 },
                 {
@@ -202,7 +203,7 @@ const LendingBorrowing = () => {
               items={[
                 {
                   label: "Your Collateral",
-                  value: userData ? `${Number(userData[0])} ETH` : "0 ETH",
+                  value: userData ? `${Number(formatEther(userData[0]))} ETH` : "0 ETH",
                 },
                 {
                   label: "Your SUSD Balance",
