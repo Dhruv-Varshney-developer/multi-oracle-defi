@@ -3,7 +3,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_priceFeedAddress",
+        "name": "priceFeedAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
         "type": "address"
       }
     ],
@@ -33,7 +38,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_amountUSD",
+        "name": "_amountSUSD",
         "type": "uint256"
       }
     ],
@@ -45,9 +50,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_amountUSD",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
       }
     ],
     "name": "calculateRepaymentAmount",
@@ -108,42 +113,29 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "interestRate",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "priceFeedAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_amountUSD",
+        "name": "_amountSUSD",
         "type": "uint256"
       }
     ],
     "name": "repay",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "susdToken",
+    "outputs": [
+      {
+        "internalType": "contract SimpleUSDToken",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -163,7 +155,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "borrowedAmountUSD",
+        "name": "borrowedAmountSUSD",
         "type": "uint256"
       }
     ],

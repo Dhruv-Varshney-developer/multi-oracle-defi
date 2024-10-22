@@ -1,127 +1,183 @@
-import React, { useState } from "react";
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  CircularProgress,
-  Alert,
-  Snackbar,
-} from "@mui/material";
-import { styled } from "@mui/system";
-import {
-  useAccount,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useBalance,
-} from "wagmi";
-import { parseEther, formatEther } from "viem";
-import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
+import React, { useState } from 'react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance } from 'wagmi';
+import { parseEther} from 'viem';
+import { motion } from 'framer-motion';
+import LendingBorrowingABI from '../utils/LendingBorrowingabi.json';
+import SimpleUSDTokenABI from '../utils/SimpleUSDTokenABI.json';
 
-const contractAddress = "0x3d4c3C9eE2b78c8af0aF5EEf76884FE2421DC9a5";
+// StatCard Component
+const StatCard = ({ title, value, icon }) => (
+  <motion.div 
+    whileHover={{ scale: 1.05 }}
+    className="bg-white/10 backdrop-blur-lg rounded-xl p-4 flex flex-col items-center justify-center space-y-2"
+  >
+    <div className="text-blue-400">{icon}</div>
+    <h3 className="text-sm text-gray-400">{title}</h3>
+    <p className="text-lg font-bold text-white">{value}</p>
+  </motion.div>
+);
 
-const StyledBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(4),
-  marginBottom: theme.spacing(4),
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: "#f5f5f5",
-}));
+// ActionCard Component
+const ActionCard = ({ title, children, icon }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-white/5 backdrop-blur-lg rounded-xl p-6 space-y-4"
+  >
+    <div className="flex items-center space-x-2">
+      <span className="text-blue-400">{icon}</span>
+      <h2 className="text-xl font-bold text-white">{title}</h2>
+    </div>
+    {children}
+  </motion.div>
+);
 
+// Input Component
+const Input = ({ label, value, onChange, type = "number", placeholder }) => (
+  <div className="space-y-2">
+    <label className="text-sm text-gray-400">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+);
+
+// Button Component
+const Button = ({ onClick, disabled, children, loading, variant = "primary" }) => {
+  const baseStyles = "w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2";
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-800 disabled:opacity-50",
+    secondary: "bg-white/10 hover:bg-white/20 text-white disabled:opacity-50",
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`${baseStyles} ${variants[variant]}`}
+    >
+      {loading ? (
+        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      ) : children}
+    </motion.button>
+  );
+};
+
+// Main Component
 const LendingBorrowing = () => {
   const { address } = useAccount();
   const [collateralETH, setCollateralETH] = useState("");
   const [borrowAmount, setBorrowAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [activeTab, setActiveTab] = useState("deposit");
 
-  // Get ETH balance
-  const { data: balance } = useBalance({ address });
+  const lendingContractAddress = "0xE18C1Bc5316e8590A93fC9dD8A338A0019068075";
+  const susdContractAddress = "0xdCe92E3F9Bd38776cfaEF9d7B6fA551f274D9323";
 
-  // Get latest ETH price
+  // Contract reads
   const { data: ethPrice } = useReadContract({
-    address: contractAddress,
+    address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "getLatestPrice",
-    account: address,
   });
 
-  // Get max borrow amount
-  const { data: maxBorrowAmount } = useReadContract({
-    address: contractAddress,
+  const { data: maxBorrow } = useReadContract({
+    address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "getMaxBorrowAmount",
-    account: address,
   });
 
-  // Deposit collateral
-  const { write: depositCollateral, data: depositTxData } = useWriteContract({
-    address: contractAddress,
+  const { data: userData } = useReadContract({
+    address: lendingContractAddress,
     abi: LendingBorrowingABI,
-    functionName: "depositCollateral",
-    account: address,
+    functionName: "users",
+    args: [address],
   });
 
-  const { isLoading: isDepositLoading } = useWaitForTransactionReceipt({
-    hash: depositTxData?.hash,
-    onSuccess: () => {
-      setSnackbar({
-        open: true,
-        message: "Collateral deposited successfully!",
-        severity: "success",
-      });
-      setCollateralETH("");
-    },
+  const { data: contractSUSDBalance } = useReadContract({
+    address: susdContractAddress,
+    abi: SimpleUSDTokenABI,
+    functionName: "balanceOf",
+    args: [lendingContractAddress],
   });
 
-  // Borrow
+  const { data: userSUSDBalance } = useReadContract({
+    address: susdContractAddress,
+    abi: SimpleUSDTokenABI,
+    functionName: "balanceOf",
+    args: [address],
+  });
+
+  const { data: contractETHBalance } = useBalance({
+    address: lendingContractAddress,
+  });
+
+  // Contract writes
+  const { write: approve } = useWriteContract({
+    address: susdContractAddress,
+    abi: SimpleUSDTokenABI,
+    functionName: "approve",
+  });
+
+  const { writeContract } = useWriteContract();
+
+
   const { write: borrow, data: borrowTxData } = useWriteContract({
-    address: contractAddress,
+    address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "borrow",
-    account: address,
   });
 
-  const { isLoading: isBorrowLoading } = useWaitForTransactionReceipt({
-    hash: borrowTxData?.hash,
-    onSuccess: () => {
-      setSnackbar({
-        open: true,
-        message: "Borrowed successfully!",
-        severity: "success",
-      });
-      setBorrowAmount("");
-    },
-  });
-
-  // Repay
   const { write: repay, data: repayTxData } = useWriteContract({
-    address: contractAddress,
+    address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "repay",
-    account: address,
+  });
+
+  const { write: withdrawCollateral, data: withdrawTxData } = useWriteContract({
+    address: lendingContractAddress,
+    abi: LendingBorrowingABI,
+    functionName: "withdrawCollateral",
+  });
+
+  // Transaction receipts
+ /* const { isLoading: isDepositLoading } = useWaitForTransactionReceipt({
+    hash: depositTxData?.hash,
+  });
+*/
+  const { isLoading: isBorrowLoading } = useWaitForTransactionReceipt({
+    hash: borrowTxData?.hash,
   });
 
   const { isLoading: isRepayLoading } = useWaitForTransactionReceipt({
     hash: repayTxData?.hash,
-    onSuccess: () => {
-      setSnackbar({
-        open: true,
-        message: "Repaid successfully!",
-        severity: "success",
-      });
-      setRepayAmount("");
-    },
   });
 
-  const handleDeposit = () => {
+  const { isLoading: isWithdrawLoading } = useWaitForTransactionReceipt({
+    hash: withdrawTxData?.hash,
+  });
+
+  // Action handlers
+  const handleDeposit = async () => {
     if (!collateralETH) return;
-    depositCollateral({ value: parseEther(collateralETH) });
+    
+    try {
+      await writeContract({
+        address: lendingContractAddress,
+        abi: LendingBorrowingABI,
+        functionName: 'depositCollateral',
+        value: parseEther(collateralETH)
+      });
+    } catch (error) {
+      console.error('Deposit error:', error);
+    }
   };
 
   const handleBorrow = () => {
@@ -134,91 +190,163 @@ const LendingBorrowing = () => {
     repay({ args: [parseEther(repayAmount)] });
   };
 
+  const handleWithdraw = () => {
+    if (!withdrawAmount) return;
+    withdrawCollateral({ args: [parseEther(withdrawAmount)] });
+  };
+
+  const handleApprove = () => {
+    approve({ 
+      args: [lendingContractAddress, parseEther("1000000")],
+    });
+  };
+
   return (
-    <Container maxWidth="md" sx={{ marginTop: "2rem" }}>
-      <Typography variant="h4" align="center" gutterBottom>
-        Lending & Borrowing dApp
-      </Typography>
-
-      <Alert severity="info" sx={{ marginBottom: "1rem" }}>
-        Current ETH/USD Price: $
-        {ethPrice ? formatEther(ethPrice) : "Loading..."}
-      </Alert>
-
-      <StyledBox>
-        <Typography variant="h6">Deposit Collateral (ETH)</Typography>
-        <TextField
-          label="Collateral ETH"
-          value={collateralETH}
-          onChange={(e) => setCollateralETH(e.target.value)}
-          fullWidth
-          type="number"
-          sx={{ marginY: "1rem" }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleDeposit}
-          disabled={isDepositLoading}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-2"
         >
-          {isDepositLoading ? <CircularProgress size={24} /> : "Deposit"}
-        </Button>
-      </StyledBox>
+          <h1 className="text-4xl font-bold">Lending & Borrowing Protocol</h1>
+          <p className="text-gray-400">Deposit ETH, Borrow SUSD, and more!</p>
+        </motion.div>
 
-      <StyledBox>
-        <Typography variant="h6">Borrow (USD)</Typography>
-        <TextField
-          label="Amount to Borrow (USD)"
-          value={borrowAmount}
-          onChange={(e) => setBorrowAmount(e.target.value)}
-          fullWidth
-          type="number"
-          sx={{ marginY: "1rem" }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleBorrow}
-          disabled={isBorrowLoading}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard 
+            title="ETH Price" 
+            value={ethPrice ? `$${Number(ethPrice)/10**8}` : "Loading..."} 
+            icon="💎"
+          />
+          <StatCard 
+            title="Your Collateral" 
+            value={userData ? `${Number(userData[0])} ETH` : "0 ETH"} 
+            icon="🏦"
+          />
+          <StatCard 
+            title="Your SUSD Balance" 
+            value={userSUSDBalance ? `${Number(userSUSDBalance)} SUSD` : "0 SUSD"} 
+            icon="💵"
+          />
+          <StatCard 
+            title="Borrowed Amount" 
+            value={userData ? `${Number(userData[1])} SUSD` : "0 SUSD"} 
+            icon="🏦"
+          />
+        </div>
+
+        {/* Protocol Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard 
+            title="Protocol ETH Balance" 
+            value={contractETHBalance ? `${Number(contractETHBalance.value)} ETH` : "Loading..."} 
+            icon="🏦"
+          />
+          <StatCard 
+            title="Protocol SUSD Balance" 
+            value={contractSUSDBalance ? `${Number(contractSUSDBalance)} SUSD` : "Loading..."} 
+            icon="💰"
+          />
+          <StatCard 
+            title="Max Borrowable SUSD Amount" 
+            value={maxBorrow ? `${Number(maxBorrow)} SUSD` : "Loading..."} 
+            icon="📊"
+          />
+        </div>
+
+        {/* Action Tabs */}
+        <div className="flex space-x-4 justify-center">
+          {["deposit", "borrow", "repay", "withdraw"].map((tab) => (
+            <motion.button
+              key={tab}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg capitalize ${
+                activeTab === tab 
+                  ? "bg-blue-600 text-white" 
+                  : "bg-white/10 text-gray-300"
+              }`}
+            >
+              {tab}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Action Cards */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
         >
-          {isBorrowLoading ? <CircularProgress size={24} /> : "Borrow"}
-        </Button>
-      </StyledBox>
+          {activeTab === "deposit" && (
+            <ActionCard title="Deposit Collateral" icon="🏦">
+              <Input
+                label="Amount (ETH)"
+                value={collateralETH}
+                onChange={(e) => setCollateralETH(e.target.value)}
+                placeholder="0"
+              />
+              <Button onClick={handleDeposit} >
+                Deposit ETH
+              </Button>
+            </ActionCard>
+          )}
 
-      <StyledBox>
-        <Typography variant="h6">Repay Loan</Typography>
-        <TextField
-          label="Repay Amount (USD)"
-          value={repayAmount}
-          onChange={(e) => setRepayAmount(e.target.value)}
-          fullWidth
-          type="number"
-          sx={{ marginY: "1rem" }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleRepay}
-          disabled={isRepayLoading}
-        >
-          {isRepayLoading ? <CircularProgress size={24} /> : "Repay"}
-        </Button>
-      </StyledBox>
+          {activeTab === "borrow" && (
+            <ActionCard title="Borrow SUSD" icon="💸">
+              <Input
+                label="Amount (SUSD)"
+                value={borrowAmount}
+                onChange={(e) => setBorrowAmount(e.target.value)}
+                placeholder="0.0"
+              />
+              <Button onClick={handleBorrow} loading={isBorrowLoading}>
+                Borrow SUSD
+              </Button>
+            </ActionCard>
+          )}
 
-      <Box elevation={3} sx={{ padding: "1rem", marginY: "1rem" }}>
-        <Typography variant="subtitle1" align="center">
-          Max Borrowable Amount: $
-          {maxBorrowAmount ? formatEther(maxBorrowAmount) : "Loading..."}
-        </Typography>
-      </Box>
+          {activeTab === "repay" && (
+            <ActionCard title="Repay Loan" icon="💰">
+              <Input
+                label="Amount (SUSD)"
+                value={repayAmount}
+                onChange={(e) => setRepayAmount(e.target.value)}
+                placeholder="0.0"
+              />
+              <div className="space-y-2">
+                <Button onClick={handleApprove} variant="secondary">
+                  Approve SUSD
+                </Button>
+                <Button onClick={handleRepay} loading={isRepayLoading}>
+                  Repay SUSD
+                </Button>
+              </div>
+            </ActionCard>
+          )}
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+          {activeTab === "withdraw" && (
+            <ActionCard title="Withdraw Collateral" icon="📤">
+              <Input
+                label="Amount (ETH)"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="0.0"
+              />
+              <Button onClick={handleWithdraw} loading={isWithdrawLoading}>
+                Withdraw ETH
+              </Button>
+            </ActionCard>
+          )}
+        </motion.div>
+      </div>
+    </div>
   );
 };
 
