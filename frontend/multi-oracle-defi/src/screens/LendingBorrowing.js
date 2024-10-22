@@ -120,85 +120,85 @@ const LendingBorrowing = () => {
   });
 
   // Contract writes
-  const { write: approve } = useWriteContract({
-    address: susdContractAddress,
-    abi: SimpleUSDTokenABI,
-    functionName: "approve",
-  });
-
-  const { writeContract } = useWriteContract();
-
-
-  const { write: borrow, data: borrowTxData } = useWriteContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "borrow",
-  });
-
-  const { write: repay, data: repayTxData } = useWriteContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "repay",
-  });
-
-  const { write: withdrawCollateral, data: withdrawTxData } = useWriteContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "withdrawCollateral",
-  });
+  const { writeContract, data: writeTxData, isLoading: isWriteLoading } = useWriteContract();
 
   // Transaction receipts
- /* const { isLoading: isDepositLoading } = useWaitForTransactionReceipt({
-    hash: depositTxData?.hash,
-  });
-*/
-  const { isLoading: isBorrowLoading } = useWaitForTransactionReceipt({
-    hash: borrowTxData?.hash,
-  });
-
-  const { isLoading: isRepayLoading } = useWaitForTransactionReceipt({
-    hash: repayTxData?.hash,
-  });
-
-  const { isLoading: isWithdrawLoading } = useWaitForTransactionReceipt({
-    hash: withdrawTxData?.hash,
+  const { isLoading: isTxLoading, data: txReceipt } = useWaitForTransactionReceipt({
+    hash: writeTxData?.hash,
   });
 
   // Action handlers
   const handleDeposit = async () => {
     if (!collateralETH) return;
-    
+
     try {
       await writeContract({
         address: lendingContractAddress,
         abi: LendingBorrowingABI,
-        functionName: 'depositCollateral',
-        value: parseEther(collateralETH)
+        functionName: "depositCollateral",
+        value: parseEther(collateralETH),
       });
     } catch (error) {
-      console.error('Deposit error:', error);
+      console.error("Deposit error:", error);
     }
   };
 
-  const handleBorrow = () => {
+  const handleBorrow = async () => {
     if (!borrowAmount) return;
-    borrow({ args: [parseEther(borrowAmount)] });
+
+    try {
+      await writeContract({
+        address: lendingContractAddress,
+        abi: LendingBorrowingABI,
+        functionName: "borrow",
+        args: [borrowAmount],
+      });
+    } catch (error) {
+      console.error("Borrow error:", error);
+    }
   };
 
-  const handleRepay = () => {
+  const handleRepay = async () => {
     if (!repayAmount) return;
-    repay({ args: [parseEther(repayAmount)] });
+
+    try {
+      await writeContract({
+        address: lendingContractAddress,
+        abi: LendingBorrowingABI,
+        functionName: "repay",
+        args: [repayAmount],
+      });
+    } catch (error) {
+      console.error("Repay error:", error);
+    }
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     if (!withdrawAmount) return;
-    withdrawCollateral({ args: [parseEther(withdrawAmount)] });
+
+    try {
+      await writeContract({
+        address: lendingContractAddress,
+        abi: LendingBorrowingABI,
+        functionName: "withdrawCollateral",
+        args: [parseEther(withdrawAmount)],
+      });
+    } catch (error) {
+      console.error("Withdraw error:", error);
+    }
   };
 
-  const handleApprove = () => {
-    approve({ 
-      args: [lendingContractAddress, parseEther("1000000")],
-    });
+  const handleApprove = async () => {
+    try {
+      await writeContract({
+        address: susdContractAddress,
+        abi: SimpleUSDTokenABI,
+        functionName: "approve",
+        args: [lendingContractAddress, 1000000],
+      });
+    } catch (error) {
+      console.error("Approve error:", error);
+    }
   };
 
   return (
@@ -292,7 +292,7 @@ const LendingBorrowing = () => {
                 onChange={(e) => setCollateralETH(e.target.value)}
                 placeholder="0"
               />
-              <Button onClick={handleDeposit} >
+              <Button onClick={handleDeposit} loading={isTxLoading}>
                 Deposit ETH
               </Button>
             </ActionCard>
@@ -306,7 +306,7 @@ const LendingBorrowing = () => {
                 onChange={(e) => setBorrowAmount(e.target.value)}
                 placeholder="0.0"
               />
-              <Button onClick={handleBorrow} loading={isBorrowLoading}>
+              <Button onClick={handleBorrow} loading={isTxLoading}>
                 Borrow SUSD
               </Button>
             </ActionCard>
@@ -324,7 +324,7 @@ const LendingBorrowing = () => {
                 <Button onClick={handleApprove} variant="secondary">
                   Approve SUSD
                 </Button>
-                <Button onClick={handleRepay} loading={isRepayLoading}>
+                <Button onClick={handleRepay} loading={isTxLoading}>
                   Repay SUSD
                 </Button>
               </div>
@@ -339,7 +339,7 @@ const LendingBorrowing = () => {
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 placeholder="0.0"
               />
-              <Button onClick={handleWithdraw} loading={isWithdrawLoading}>
+              <Button onClick={handleWithdraw} loading={isTxLoading}>
                 Withdraw ETH
               </Button>
             </ActionCard>
