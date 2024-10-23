@@ -24,6 +24,9 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     uint256 public tokenCounter;
     mapping(uint256 => LabsNFT) public labsNFT;
     mapping(uint256 => RequestStatus) public s_requests; //requestId --> requestStatus
+    mapping(address => uint256) public userMints; // Tracking mints per user
+
+    uint256 public maxMintsPerUser = 4; // Maximum NFTs per user
 
     //base image of LabsNFTs
     string private _imageURI = "https://ipfs.io/ipfs/QmVjJtouNYv89rqPiXoE6afBsasLVjNNj87K5cJy9GzS4Y";
@@ -50,7 +53,12 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         tokenCounter = 0;
     }
 
-    function requestRandomWords() external onlyOwner{
+    modifier canMint(){
+        require(userMints[msg.sender] < maxMintsPerUser, "User has reached the minting limit of 4 NFTs.");
+        _;
+    }
+
+    function requestRandomWords() public canMint{
         requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
@@ -90,7 +98,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         return string(abi.encodePacked("data:application/json;base64,", json));
     }
 
-    function mintNFT(uint256 _requestId) public {
+    function mintNFT(uint256 _requestId) public canMint{
         //Verify request has been fulfilled
         (bool fulfilled, uint256[] memory randomWords) = getRequestStatus(_requestId);
         require(fulfilled, "Randomness not fulfilled");
@@ -109,6 +117,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
 
         emit NFTMinted(tokenCounter, msg.sender);
         tokenCounter++;  // increm. token counter ++
+        userMints[msg.sender]++;  // Track the user's minted NFTs
     }
 
     function fulfillRandomWords(uint256 _requestId, uint256[] calldata _randomWords) internal override {
