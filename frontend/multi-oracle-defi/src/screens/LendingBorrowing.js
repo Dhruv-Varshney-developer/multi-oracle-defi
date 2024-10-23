@@ -12,7 +12,8 @@ import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
 import SimpleUSDTokenABI from "../utils/SimpleUSDTokenABI.json";
 
-import { InfoCard, ActionPanel } from "../components/BankComponents";
+import {  ActionPanel } from "../components/BankComponents";
+import { InfoCard } from "../components/infoCard";
 
 const LendingBorrowing = () => {
   const { address } = useAccount();
@@ -34,7 +35,7 @@ const LendingBorrowing = () => {
     address: lendingContractAddress,
     abi: LendingBorrowingABI,
     functionName: "getMaxBorrowAmount",
-    account : address,
+    account: address,
   });
 
   const { data: userData } = useReadContract({
@@ -67,6 +68,7 @@ const LendingBorrowing = () => {
     writeContract,
     data: writeTxData,
     isLoading: isWriteLoading,
+    error,
   } = useWriteContract();
 
   // Transaction receipts
@@ -84,43 +86,43 @@ const LendingBorrowing = () => {
 
     try {
       switch (action) {
-      case "borrow":
-        await writeContract({
-        address: lendingContractAddress,
-        abi: LendingBorrowingABI,
-        functionName: "borrow",
-        args: [amount],
-        });
-        break;
-      case "repay":
-        await writeContract({
-        address: lendingContractAddress,
-        abi: LendingBorrowingABI,
-        functionName: "repay",
-        args: [amount],
-        });
-        break;
-      case "withdraw":
-        await writeContract({
-        address: lendingContractAddress,
-        abi: LendingBorrowingABI,
-        functionName: "withdrawCollateral",
-        args: [parseEther(amount)],
-        });
-        break;
-      default:
-        await writeContract({
-        address: lendingContractAddress,
-        abi: LendingBorrowingABI,
-        functionName: "depositCollateral",
-        value: parseEther(amount),
-        });
-        break;
+        case "borrow":
+          await writeContract({
+            address: lendingContractAddress,
+            abi: LendingBorrowingABI,
+            functionName: "borrow",
+            args: [amount],
+          });
+          break;
+        case "repay":
+          await writeContract({
+            address: lendingContractAddress,
+            abi: LendingBorrowingABI,
+            functionName: "repay",
+            args: [amount],
+          });
+          break;
+        case "withdraw":
+          await writeContract({
+            address: lendingContractAddress,
+            abi: LendingBorrowingABI,
+            functionName: "withdrawCollateral",
+            args: [parseEther(amount)],
+          });
+          break;
+        default:
+          await writeContract({
+            address: lendingContractAddress,
+            abi: LendingBorrowingABI,
+            functionName: "depositCollateral",
+            value: parseEther(amount),
+          });
+          break;
       }
     } catch (error) {
       console.error(`${action} error:`, error);
     }
-    };
+  };
 
   const handleApprove = async () => {
     try {
@@ -175,7 +177,7 @@ const LendingBorrowing = () => {
                 {
                   label: "Protocol SUSD Balance",
                   value: contractSUSDBalance
-                    ? `${Number(contractSUSDBalance)} SUSD`
+                    ? `${Number(formatEther(contractSUSDBalance))} SUSD`
                     : "Loading...",
                 },
               ]}
@@ -192,6 +194,10 @@ const LendingBorrowing = () => {
               amount={amount}
               setAmount={setAmount}
               isLoading={isWriteLoading || isTxLoading}
+              error={error}
+              writeTxData={writeTxData}
+              isWriteLoading={isWriteLoading}
+              isTxLoading={isTxLoading}
             />
           </Grid>
 
@@ -203,12 +209,14 @@ const LendingBorrowing = () => {
               items={[
                 {
                   label: "Your Collateral",
-                  value: userData ? `${Number(formatEther(userData[0]))} ETH` : "0 ETH",
+                  value: userData
+                    ? `${Number(formatEther(userData[0]))} ETH`
+                    : "0 ETH",
                 },
                 {
                   label: "Your SUSD Balance",
                   value: userSUSDBalance
-                    ? `${Number(userSUSDBalance)} SUSD`
+                    ? `${Number(formatEther(userSUSDBalance))} SUSD`
                     : "0 SUSD",
                 },
                 {
@@ -217,7 +225,9 @@ const LendingBorrowing = () => {
                 },
                 {
                   label: "Max Borrowable SUSD",
-                  value: maxBorrow ? `${Number(maxBorrow)} SUSD` : "Loading...",
+                  value: maxBorrow
+                    ? `${Number(maxBorrow)} SUSD`
+                    : "Fetching data...",
                 },
               ]}
             />

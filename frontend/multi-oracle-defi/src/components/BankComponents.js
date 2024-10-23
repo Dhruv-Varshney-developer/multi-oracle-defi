@@ -8,21 +8,22 @@ import {
   Tabs,
   TextField,
   Button,
-  Paper,
   CircularProgress,
-  Grid,
   Fade,
+  Alert,
+  Link,
 } from "@mui/material";
 import {
-  AttachMoney,
-  SwapHoriz,
   AccountBalanceWallet,
   ArrowUpward,
   ArrowDownward,
+  AttachMoney,
+  SwapHoriz,
 } from "@mui/icons-material";
+import React from "react";
 
-// Styled Components
- const StyledCard = styled(Card)(({ theme }) => ({
+// Previous styled components remain the same
+export const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   background: "rgba(0, 0, 0, 0.6)",
   backdropFilter: "blur(10px)",
@@ -65,43 +66,22 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-export const InfoCard = ({ title, items, icon }) => (
-  <StyledCard>
-    <CardContent>
-      <Box display="flex" alignItems="center" mb={3}>
-        {icon}
-        <Typography variant="h6" ml={1} color="white">
-          {title}
-        </Typography>
-      </Box>
-      <Grid container spacing={2}>
-        {items.map((item, index) => (
-          <Grid item xs={12} key={index}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                background: "rgba(255, 255, 255, 0.05)",
-                borderRadius: 2,
-                transition: "0.3s",
-                "&:hover": {
-                  background: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
-                {item.label}
-              </Typography>
-              <Typography variant="h6" color="white" mt={0.5}>
-                {item.value}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-    </CardContent>
-  </StyledCard>
-);
+const StyledAlert = styled(Alert)(({ theme }) => ({
+  marginTop: theme.spacing(2),
+  backdropFilter: "blur(10px)",
+  background: "rgba(0, 0, 0, 0.4)",
+  color: "white",
+  "& .MuiAlert-icon": {
+    color: "inherit",
+  },
+  "& a": {
+    color: theme.palette.primary.main,
+    textDecoration: "none",
+    "&:hover": {
+      textDecoration: "underline",
+    },
+  },
+}));
 
 export const ActionPanel = ({
   activeTab,
@@ -111,7 +91,32 @@ export const ActionPanel = ({
   amount,
   setAmount,
   isLoading,
+  error, // From useWriteContract
+  writeTxData, // Transaction hash
+  isWriteLoading,
+  isTxLoading,
 }) => {
+  const renderStatusInfo = () => {
+    return (
+      <Box sx={{ mt: 2 }}>
+        
+
+        
+
+      
+
+        {/* Error States */}
+        {error && (
+          <StyledAlert severity="error">
+            {error.message.includes("user rejected")
+              ? "Transaction rejected by user"
+              : `Error: ${error.message}`}
+          </StyledAlert>
+        )}
+      </Box>
+    );
+  };
+
   const renderContent = () => {
     return (
       <Box sx={{ mt: 3 }}>
@@ -132,17 +137,22 @@ export const ActionPanel = ({
             variant="outlined"
             onClick={handleApprove}
             sx={{ mb: 2 }}
+            disabled={isWriteLoading || isTxLoading}
           >
-            Approve SUSD
+            {isWriteLoading || isTxLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Approve SUSD"
+            )}
           </StyledButton>
         )}
         <StyledButton
           fullWidth
           variant="contained"
           onClick={() => handleAction(activeTab)}
-          disabled={isLoading}
+          disabled={isWriteLoading || isTxLoading}
         >
-          {isLoading ? (
+          {isWriteLoading || isTxLoading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ${
@@ -150,6 +160,8 @@ export const ActionPanel = ({
             }`
           )}
         </StyledButton>
+
+        {renderStatusInfo()}
       </Box>
     );
   };
