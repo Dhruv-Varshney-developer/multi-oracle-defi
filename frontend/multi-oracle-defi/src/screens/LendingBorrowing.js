@@ -12,7 +12,7 @@ import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
 import SimpleUSDTokenABI from "../utils/SimpleUSDTokenABI.json";
 
-import {  ActionPanel } from "../components/BankComponents";
+import { ActionPanel } from "../components/BankComponents";
 import { InfoCard } from "../components/infoCard";
 
 const LendingBorrowing = () => {

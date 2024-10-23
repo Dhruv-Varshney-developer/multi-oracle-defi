@@ -99,12 +99,6 @@ export const ActionPanel = ({
   const renderStatusInfo = () => {
     return (
       <Box sx={{ mt: 2 }}>
-        
-
-        
-
-      
-
         {/* Error States */}
         {error && (
           <StyledAlert severity="error">
