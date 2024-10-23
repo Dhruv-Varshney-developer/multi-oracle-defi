@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ethers } from 'ethers'; // v5.7.2
 import {
   Container,
   Box,
@@ -12,9 +13,11 @@ import {
   CardMedia
 } from "@mui/material";
 import NFTMintingWithVRFABI from "../utils/NFTMintingABI.json"; 
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
+import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 
-const contractAddress = '0x1942ce893e3ce688c077E7b87847B6FF7C65a5E1';
+const INFURA_URL = 'https://polygon-amoy.infura.io/v3/8f72021b7a5f405990c4b3a9f0a90bfa';
+
+const contractAddress = '0xb817457dde9c024452f641337f830ce9aab523f7';
 
 const NFT = () => {
   const [status, setStatus] = useState('');
@@ -45,20 +48,56 @@ const NFT = () => {
   
   const connectedAccount = useAccount();
   // Fetch contract info at load
+  const vrfCoordinatorCall = useReadContract({
+    address: contractAddress,
+    abi: NFTMintingWithVRFABI,
+    functionName: 's_vrfCoordinator',
+  });
+
+  const keyHashCall = useReadContract({
+    address: contractAddress,
+    abi: NFTMintingWithVRFABI,
+    functionName: 'keyHash',
+  });
+
+  const subscriptionIdCall = useReadContract({
+    address: contractAddress,
+    abi: NFTMintingWithVRFABI,
+    functionName: 'subscriptionId',
+  });
+
+  const contractOwnerCall = useReadContract({
+    address: contractAddress,
+    abi: NFTMintingWithVRFABI,
+    functionName: 'owner',
+  });
+
   useEffect(() => {
-    const fetchContractInfo = async () => {
-      // These are mock reads, replace with real contract reading functions
-      setContractData({
-        vrfCoordinator: '0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2',
-        keyHash: '0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899',
-        subscriptionId: '103476436659143114776284521134562088597934666786628593221376876035364487025273',
-        contractOwner: '0x9D81E1Bd64112ebDbB1FA533f9c0f4BBfB0B26A7',
-        contractAddress: contractAddress,
-        gasLimit: '200000'
-      });
+    const fetchContractData = async () => {
+      try {
+        const [vrfCoordinator, keyHash, subscriptionId, contractOwner] = await Promise.all([
+          vrfCoordinatorCall.refetch(),
+          keyHashCall.refetch(),
+          subscriptionIdCall.refetch(),
+          contractOwnerCall.refetch(),
+        ]);
+
+        setContractData({
+          vrfCoordinator: vrfCoordinator?.data || '',
+          keyHash: keyHash?.data || '',
+          subscriptionId: subscriptionId?.data ? subscriptionId.data.toString() : '',  
+          contractOwner: contractOwner?.data || '',
+          contractAddress: contractAddress,
+          gasLimit: '200000', 
+        });
+      } catch (error) {
+        console.error('Error fetching contract data:', error);
+      }
     };
-    fetchContractInfo();
+
+    fetchContractData();  
   }, []);
+
   // ------------------------------------------------------------------------------------------
   // Check NFT Balance
   const { data: balanceData, refetch: refetchBalance } = useReadContract({
@@ -116,12 +155,44 @@ const NFT = () => {
     }
   };
  //------------------------------------------------------------------------------------------
-  // Request random words (using `useWriteContract`)
-   const { data: requestData, write: writeRequestRandomWords } = useWriteContract({
+  // Connect to the Polygon Amoy network using Alchemy
+  /*const provider = new ethers.providers.JsonRpcProvider(INFURA_URL);
+  const signer = provider.getSigner(connectedAccount.address);
+  const contract = new ethers.Contract(contractAddress, NFTMintingWithVRFABI, signer);
+  
+  async function requestVRF() {
+    try {
+      setLoading(true);
+      setStatus('Sending request for random words...');
+
+      const tx = await contract.requestRandomWords();
+      console.log('Request sent:', tx.hash);
+      setTransactionHash(tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      const requestIdEvent = receipt.events.find(event => event.event === 'RequestSent');
+      const requestId = requestIdEvent.args.requestId.toString();
+      setRequestId(requestId);
+      setStatus(`Transaction confirmed! Request ID: ${requestId}`);
+
+    } catch (error) {
+
+      console.error('Error calling requestRandomWords:', error);
+      setStatus('Error requesting random words.');
+    } finally {
+
+      setLoading(false);
+    }
+  };*/
+
+  // Handle the request for random words with ethers
+  const {data: requestData, write: requestVRF } = useWriteContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
     functionName: 'requestRandomWords',
-    onMutate: () => {
+        onMutate: () => {
       setStatus('Sending request for random words...');
       setLoading(true); 
       setStep('requestRandomWords');
@@ -139,40 +210,46 @@ const NFT = () => {
   });
 
   // Handle random words request
-  const requestRandomWords = async () => {
+  /*const requestRandomWords = async () => {
     try {
-      const result = await writeRequestRandomWords(); 
+      const result = await requestVRF(); 
       const data = result?.data; 
       console.log("Random Words Request data:", data);
 
       setTransactionHash(result?.hash || ''); 
       setStatus('Request successful. Waiting for confirmation...');
+    }catch(error){
+      console.error('Error calling requestRandomWords:', error);
+      setStatus('Error requesting random words');
+    }
+  };*/
+
+  const handleRequestRandomWords = async () => {
+    try {
+      setLoading(true);
+      setStatus('Sending request for random words...');
+      
+      const result = await requestVRF();  // Send request
+      setTransactionHash(result.hash);
+      setStatus(`Transaction sent: ${result.hash}`);
+      
+      // Waiting for transaction confirmation
+      const receipt = await result.wait();
+      const requestIdEvent = receipt.events?.find(event => event.event === 'RequestSent');
+      const requestId = requestIdEvent?.args?.requestId;
+      setRequestId(requestId);
+      setStatus(`Transaction confirmed, requestId: ${requestId}`);
+      setLoading(false);
     } catch (error) {
-      console.error('Error in requestRandomWords function:', error);
-      setStatus('Error during the request.');
+      setLoading(false);
+      console.error('Error during request:', error);
+      setStatus('Error during request.');
     }
   };
 
-  const { isSuccess } = useWaitForTransactionReceipt({
-    hash: transactionHash, 
-    onSuccess: (data) => {
-      const event = data.logs.find(log => log.event === 'RequestSent');
-      const id = event?.args?.requestId;
-      setRequestId(id); 
-      setStatus(`Request confirmed. RequestId: ${id}. You can now mint your NFT.`);
-      setLoading(false); 
-      setStep('requestSuccess');
-    },
-    onError: (error) => {
-      console.error('Error confirming request:', error);
-      setStatus('Error confirming request. See console for details.');
-      setLoading(false); 
-    }
-  });
-  
   //------------------------------------------------------------------------------------------
   // Mint NFT using requestId (using `useWriteContract`)
-  const { data: mintData, write: mintNFT } = useWriteContract({
+  const { write: mintNFT } = useReadContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
     functionName: 'mintNFT',
@@ -217,16 +294,16 @@ const NFT = () => {
         </Box>
 
       {/* Center Panel - Interaction Buttons */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30%' }}>
-      <Button
-          variant="contained"
-          color="primary"
-          onClick={requestRandomWords} 
-          disabled={loading}
-          sx={{ marginBottom: "1rem" }}
-        >
-          {loading && step === 'requestRandomWords' ? <CircularProgress size={20} /> : 'Request Random Words'}
-        </Button>
+      <Box sx={{ backgroundColor: '#f0f0f0', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30%' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRequestRandomWords}
+            disabled={loading}
+            sx={{ marginBottom: "1rem" }}
+          >
+            {loading ? <CircularProgress size={20} /> : 'Request Random Words'}
+          </Button>
 
         <TextField
           label="Request ID"
