@@ -24,7 +24,6 @@ const NFT = () => {
   const [inputRequestId, setInputRequestId] = useState(''); // For user input request id
   const [tokenId, setTokenId] = useState('');
   const [nftBalance, setNftBalance] = useState(null);
-  const [hasRequested, setHasRequested] = useState(false); // Control variable to prevent multiple requests
 
   const [nftDetails, setNftDetails] = useState({
     series: '',
@@ -209,7 +208,7 @@ const NFT = () => {
                 functionName: 'requestRandomWords',
               })
             }
-            disabled={hasRequested} // Disable the button if loading or already requested
+            disabled={false} 
             sx={{ marginBottom: "1rem" }}
           >
             {loading ? <CircularProgress size={20} /> : 'Request Random Words'}
