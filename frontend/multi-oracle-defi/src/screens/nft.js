@@ -9,7 +9,8 @@ import {
   Typography,
   Card,
   CardContent,
-  CardMedia
+  CardMedia,
+  Snackbar
 } from "@mui/material";
 import NFTMintingWithVRFABI from "../utils/NFTMintingABI.json"; 
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
@@ -24,6 +25,7 @@ const NFT = () => {
   const [inputRequestId, setInputRequestId] = useState(''); // For user input request id
   const [tokenId, setTokenId] = useState('');
   const [nftBalance, setNftBalance] = useState(null);
+  const [openAlert, setOpenAlert] = useState(false); // Control the alert visibility
 
   const [nftDetails, setNftDetails] = useState({
     series: '',
@@ -158,7 +160,7 @@ const NFT = () => {
   const { refetch: refetchRequestId } = useReadContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
-    functionName: 'requestId',
+    functionName: 's_requestId',
     enabled: false,
   });
 
@@ -198,21 +200,49 @@ const NFT = () => {
 
       {/* Center Panel - Interaction Buttons */}
       <Box sx={{ backgroundColor: '#f0f0f0', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30%' }}>
-        <h2>Mint your NFTs</h2>
+      <h2>Mint your NFTs</h2>
           <Button
             variant="contained"
             color="primary"
-            onClick={()=> requestVRF({
-                address: contractAddress,
-                abi: NFTMintingWithVRFABI,
-                functionName: 'requestRandomWords',
-              })
-            }
+            onClick={async () => {
+              try {
+                // Verificar balance de NFTs
+                const result = await refetchBalance();
+                const nftCount = result?.data?.toNumber ? result.data.toNumber() : parseInt(result.data); // Convertir el resultado correctamente
+          
+                if (nftCount >= 4) {
+                  setOpenAlert(true); // Mostrar alerta si tiene 4 o más NFTs
+                } else {
+                  // Llamar a la función requestVRF solo si el balance es menor de 4
+                  requestVRF({
+                    address: contractAddress,
+                    abi: NFTMintingWithVRFABI,
+                    functionName: 'requestRandomWords',
+                  });
+                }
+              } catch (error) {
+                console.error('Error fetching balance or requesting random words:', error);
+              }
+            }}
             disabled={false} 
             sx={{ marginBottom: "1rem" }}
           >
             {loading ? <CircularProgress size={20} /> : 'Request Random Words'}
           </Button>
+
+          <Snackbar
+            open={openAlert}
+            autoHideDuration={6000}
+            onClose={() => setOpenAlert(false)}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }} // Esto asegura que se muestre arriba y centrado
+          >
+            <Alert
+              onClose={() => setOpenAlert(false)}
+              severity="warning"
+            >
+              You already have 4 NFTs! You cannot request more.
+            </Alert>
+          </Snackbar>
 
           {/* Button read requestId */}
           <Button
@@ -250,9 +280,10 @@ const NFT = () => {
             abi: NFTMintingWithVRFABI,
             functionName: 'mintNFT',
             args: [requestId], // Pass requestId to mintNFT function
+            enabled: !!requestId,
           })
         }
-          disabled={false}
+          disabled={!inputRequestId || loading}
         >
           {loading ? <CircularProgress size={20} /> : 'Mint NFT'}
         </Button>
@@ -321,6 +352,7 @@ const NFT = () => {
         )}
       </Box>
     </Container>
+
     </Container>
   );
 };
