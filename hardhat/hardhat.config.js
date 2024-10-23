@@ -3,7 +3,6 @@ require("dotenv").config();
 require("@nomicfoundation/hardhat-verify");
 
 
-
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: "0.8.27",
@@ -17,6 +16,7 @@ module.exports = {
     polygonAmoy: {
       url: process.env.RPC_URL,
       accounts: [process.env.PRIVATE_KEY],
+
       chainId: 80002
     },
   },
@@ -24,4 +24,5 @@ module.exports = {
     apiKey: {
       polygonAmoy: process.env.POLYGONSCAN_API_KEY
     }}
+
 };
