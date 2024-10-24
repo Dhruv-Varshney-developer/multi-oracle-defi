@@ -1,6 +1,7 @@
 {
   "name": "multi-oracle-defi",
   "version": "0.1.0",
+  "proxy": "http://localhost:3000",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -12,9 +13,10 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "alchemy-sdk": "^3.4.4",
     "connectkit": "^1.8.2",
-    "ethers": "^6.13.4",
     "framer": "^2.4.1",
+    "ethers": "^5.7.2",
     "framer-motion": "^11.11.8",
     "lucide-react": "^0.453.0",
     "motion": "^10.18.0",
@@ -22,12 +24,12 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
     "react-scripts": "5.0.1",
-    "typescript": "^4.9.5",
+    "typescript": "^5.6.3",
     "viem": "2.x",
     "wagmi": "^2.12.17"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts start --no-source-maps",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -49,5 +51,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   }
 }
