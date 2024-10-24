@@ -206,14 +206,12 @@ const NFT = () => {
             color="primary"
             onClick={async () => {
               try {
-                // Verificar balance de NFTs
                 const result = await refetchBalance();
-                const nftCount = result?.data?.toNumber ? result.data.toNumber() : parseInt(result.data); // Convertir el resultado correctamente
-          
+                const nftCount = result?.data?.toNumber ? result.data.toNumber() : parseInt(result.data);           
                 if (nftCount >= 4) {
-                  setOpenAlert(true); // Mostrar alerta si tiene 4 o más NFTs
+                  setOpenAlert(true); 
                 } else {
-                  // Llamar a la función requestVRF solo si el balance es menor de 4
+
                   requestVRF({
                     address: contractAddress,
                     abi: NFTMintingWithVRFABI,
