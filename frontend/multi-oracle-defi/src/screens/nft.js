@@ -160,7 +160,7 @@ const NFT = () => {
   const { refetch: refetchRequestId } = useReadContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
-    functionName: 's_requestId',
+    functionName: 'requestId',
     enabled: false,
   });
 
