@@ -73,7 +73,7 @@ The Lucky Draw NFT system allows users to mint NFTs with random attributes gener
 
 ## Contributions
 
-We welcome contributions! Please read our [CONTRIBUTIONS.md](CONTRIBUTIONS.md) file for guidelines on how to contribute to this project.
+We welcome contributions! Please read our [contributions.md](contributions.md) file for guidelines on how to contribute to this project.
 
 ## Deployment
 
