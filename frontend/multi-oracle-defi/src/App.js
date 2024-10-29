@@ -24,7 +24,7 @@ const App = () => {
         {!isConnected && (
           <>
             <h1 style={{ marginTop: '4rem', fontSize: '3rem', fontWeight: 'bold', color: 'black' }}>
-              Capstone Labs - Module 14
+              Capstone Labs
             </h1>
             <motion.div
               initial={{ opacity: 0, y: -50 }}
@@ -51,7 +51,9 @@ const App = () => {
                 <ConnectKitButton />
               </div>
             </motion.div>
+            
           </>
+          
         )}
       </div>
 
@@ -91,6 +93,8 @@ const App = () => {
       <div style={{ width: '100%', padding: '1rem', marginTop: isConnected ? '5rem' : '2rem' }}>
         {isConnected && tabs.find((tab) => tab.name === activeTab)?.component}
       </div>
+
+      
     </div>
   );
 };
