@@ -20,7 +20,8 @@ const App = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ position: 'absolute', top: '1rem', left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {/* Centered tabs */}
+
+        {/* Tabs */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {isConnected && tabs.map((tab) => (
             <motion.button
@@ -35,8 +36,8 @@ const App = () => {
                 border: 'none',
                 borderRadius: '0.5rem',
                 cursor: 'pointer',
-                width: '150px', // Set width to ensure uniform size
-                zIndex: 1, // Ensure tabs are above each other
+                width: '150px',
+                zIndex: 1,
               }}
             >
               {tab.name}
@@ -44,7 +45,7 @@ const App = () => {
           ))}
         </div>
 
-        {/* Right-aligned ConnectKitButton */}
+        {/* ConnectKitButton */}
         <div style={{ position: 'absolute', top: 0, right: '1rem' }}>
           <ConnectKitButton />
         </div>
