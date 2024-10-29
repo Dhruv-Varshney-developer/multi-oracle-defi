@@ -20,7 +20,7 @@ const App = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ position: 'absolute', top: '1rem', left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-
+        
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {isConnected && tabs.map((tab) => (
@@ -31,7 +31,7 @@ const App = () => {
               whileTap={{ scale: 0.95 }}
               style={{
                 backgroundColor: activeTab === tab.name ? '#111' : '#737373',
-                color: activeTab === tab.name ? 'white' : 'white',
+                color: 'white',
                 padding: '0.5rem',
                 border: 'none',
                 borderRadius: '0.5rem',
@@ -78,7 +78,7 @@ const App = () => {
         </>
       )}
 
-      <div style={{ width: '100%', maxWidth: '800px', padding: '1rem', marginTop: isConnected ? '5rem' : '2rem' }}>
+      <div style={{ width: '100%', padding: '1rem', marginTop: isConnected ? '5rem' : '2rem' }}>
         {isConnected && tabs.find((tab) => tab.name === activeTab)?.component}
       </div>
     </div>
