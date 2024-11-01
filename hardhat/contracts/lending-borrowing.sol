@@ -71,7 +71,9 @@ contract LendingBorrowing {
     }
 
     // Function to calculate total repayment amount (same as borrowed amount, no interest)
-    function calculateRepaymentAmount(address user) public view returns (uint256) {
+    function calculateRepaymentAmount(
+        address user
+    ) public view returns (uint256) {
         return users[user].borrowedAmountSUSD;
     }
 
@@ -97,8 +99,6 @@ contract LendingBorrowing {
 
         // Update the user's debt
         users[msg.sender].borrowedAmountSUSD -= _amountSUSD;
-
-     
     }
 
     // Withdraw collateral function
@@ -120,5 +120,27 @@ contract LendingBorrowing {
     // Function to allow the contract to accept plain ETH transfers
     receive() external payable {
         emit Received(msg.sender, msg.value);
+    }
+
+    function creditcalculation(
+        uint256 _amountSUSD
+    ) public view returns (uint256) {
+        uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
+        uint256 interest = (_amountSUSD * 10) / 100;
+        uint256 total = _amountSUSD + interest;
+        return total;
+    }
+
+    function healthfactor() public view returns (uint256) {
+        uint256 ethPriceUSD = getLatestPrice();
+        require(ethPriceUSD > 0, "Invalid price feed");
+
+        // Calculate maximum borrowable SUSD based on user's collateral
+        uint256 maxBorrowSUSD = (((users[msg.sender].collateralETH *
+            (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
+
+        uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
+        uint256 healthfactor = (maxBorrowSUSD - totalRepayment) / maxBorrowSUSD;
+        return healthfactor;
     }
 }
