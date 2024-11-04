@@ -8,15 +8,15 @@ module.exports = buildModule("LendingBorrowingModule",  (m) => {
     AMOY_PRICE_FEED_ADDRESS
   );
 
-  // Step 1: Deploy the CapstoneUSD (cUSD token)
-  const cUSDToken =  m.contract("CapstoneUSD", []);
+  // Step 1: Deploy the CapstoneUSD (CUSD token)
+  const CUSDToken =  m.contract("CapstoneUSD", []);
   
 
   // Step 2: Deploy the LendingBorrowing contract with price feed address and token address
   const lendingBorrowing = m.contract("LendingBorrowing", [
     priceFeedAddress,
-    cUSDToken, 
+    CUSDToken, 
   ]);
 
-  return { cUSDToken, lendingBorrowing };
+  return { CUSDToken, lendingBorrowing };
 });

@@ -22,7 +22,7 @@ const LendingBorrowing = () => {
 
   // Contract addresses
   const lendingContractAddress = "0xE18C1Bc5316e8590A93fC9dD8A338A0019068075";
-  const cUSDContractAddress = "0xdCe92E3F9Bd38776cfaEF9d7B6fA551f274D9323";
+  const CUSDContractAddress = "0xdCe92E3F9Bd38776cfaEF9d7B6fA551f274D9323";
 
   // Contract reads
   const { data: ethPrice } = useReadContract({
@@ -45,15 +45,15 @@ const LendingBorrowing = () => {
     args: [address],
   });
 
-  const { data: contractcUSDBalance } = useReadContract({
-    address: cUSDContractAddress,
+  const { data: contractCUSDBalance } = useReadContract({
+    address: CUSDContractAddress,
     abi: SimpleUSDTokenABI,
     functionName: "balanceOf",
     args: [lendingContractAddress],
   });
 
-  const { data: usercUSDBalance } = useReadContract({
-    address: cUSDContractAddress,
+  const { data: userCUSDBalance } = useReadContract({
+    address: CUSDContractAddress,
     abi: SimpleUSDTokenABI,
     functionName: "balanceOf",
     args: [address],
@@ -127,7 +127,7 @@ const LendingBorrowing = () => {
   const handleApprove = async () => {
     try {
       await writeContract({
-        address: cUSDContractAddress,
+        address: CUSDContractAddress,
         abi: SimpleUSDTokenABI,
         functionName: "approve",
         args: [lendingContractAddress, 1000000],
@@ -151,7 +151,7 @@ const LendingBorrowing = () => {
             Lending & Borrowing Protocol
           </Typography>
           <Typography variant="h6" color="rgba(255, 255, 255, 0.7)">
-            Deposit ETH, Borrow cUSD, and more!
+            Deposit ETH, Borrow CUSD, and more!
           </Typography>
         </Box>
 
@@ -175,9 +175,9 @@ const LendingBorrowing = () => {
                     : "Loading...",
                 },
                 {
-                  label: "Protocol cUSD Balance",
-                  value: contractcUSDBalance
-                    ? `${Number(formatEther(contractcUSDBalance))} cUSD`
+                  label: "Protocol CUSD Balance",
+                  value: contractCUSDBalance
+                    ? `${Number(formatEther(contractCUSDBalance))} CUSD`
                     : "Loading...",
                 },
               ]}
@@ -214,19 +214,19 @@ const LendingBorrowing = () => {
                     : "0 ETH",
                 },
                 {
-                  label: "Your cUSD Balance",
-                  value: usercUSDBalance
-                    ? `${Number(formatEther(usercUSDBalance))} cUSD`
-                    : "0 cUSD",
+                  label: "Your CUSD Balance",
+                  value: userCUSDBalance
+                    ? `${Number(formatEther(userCUSDBalance))} CUSD`
+                    : "0 CUSD",
                 },
                 {
                   label: "Borrowed Amount",
-                  value: userData ? `${Number(userData[1])} cUSD` : "0 cUSD",
+                  value: userData ? `${Number(userData[1])} CUSD` : "0 CUSD",
                 },
                 {
-                  label: "Max Borrowable cUSD",
+                  label: "Max Borrowable CUSD",
                   value: maxBorrow
-                    ? `${Number(maxBorrow)} cUSD`
+                    ? `${Number(maxBorrow)} CUSD`
                     : "Fetching data...",
                 },
               ]}
