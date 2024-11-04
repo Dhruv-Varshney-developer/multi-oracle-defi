@@ -2,36 +2,23 @@
 pragma solidity ^0.8.22;
 
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-contract SimpleUSDToken is ERC20 {
-    constructor() ERC20("Simple USD Token", "SUSD") {
-        // Mint some initial tokens for the contract's liquidity pool
-        _mint(address(this), 1000000 * 10 ** 18); // 1 million SUSD tokens
-    }
-
-    // Mint function to mint new tokens (for simplicity)
-    function mint(address to, uint256 amount) external {
-        _mint(to, amount);
-    }
-}
 
 contract LendingBorrowing {
     struct User {
         uint256 collateralETH;
-        uint256 borrowedAmountSUSD;
+        uint256 borrowedAmountcUSD;
     }
 
     mapping(address => User) public users;
     uint256 public constant collateralFactor = 20; // 20% collateral factor
     AggregatorV3Interface internal priceFeed;
-    SimpleUSDToken public susdToken;
+    SimpleUSDToken public cUSDToken;
 
     event Received(address indexed sender, uint256 amount);
 
     constructor(address priceFeedAddress, address _tokenAddress) {
         priceFeed = AggregatorV3Interface(priceFeedAddress);
-        susdToken = SimpleUSDToken(_tokenAddress);
+        cUSDToken = SimpleUSDToken(_tokenAddress);
     }
 
     // Deposit collateral (ETH) by the user
@@ -46,59 +33,59 @@ contract LendingBorrowing {
         return uint256(price);
     }
 
-    // Function to view the maximum borrowable SUSD based on the user's collateral
+    // Function to view the maximum borrowable cUSD based on the user's collateral
     function getMaxBorrowAmount() public view returns (uint256) {
         uint256 ethPriceUSD = getLatestPrice();
         require(ethPriceUSD > 0, "Invalid price feed");
 
-        // Calculate maximum borrowable SUSD based on user's collateral
-        uint256 maxBorrowSUSD = (((users[msg.sender].collateralETH *
+        // Calculate maximum borrowable cUSD based on user's collateral
+        uint256 maxBorrowcUSD = (((users[msg.sender].collateralETH *
             (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
 
-        return maxBorrowSUSD;
+        return maxBorrowcUSD;
     }
 
-    // Borrow function (user borrows SUSD token instead of ETH)
-    function borrow(uint256 _amountSUSD) external {
-        uint256 maxBorrowSUSD = getMaxBorrowAmount();
-        require(_amountSUSD <= maxBorrowSUSD, "Not enough ETH collateral");
+    // Borrow function (user borrows cUSD token instead of ETH)
+    function borrow(uint256 _amountcUSD) external {
+        uint256 maxBorrowcUSD = getMaxBorrowAmount();
+        require(_amountcUSD <= maxBorrowcUSD, "Not enough ETH collateral");
 
         // Update the user's borrowed amount
-        users[msg.sender].borrowedAmountSUSD += _amountSUSD;
+        users[msg.sender].borrowedAmountcUSD += _amountcUSD;
 
-        // Transfer SUSD tokens to the user
-        susdToken.mint(msg.sender, _amountSUSD * 10 ** 18); // SUSD follows 18 decimals
+        // Transfer cUSD tokens to the user
+        cUSDToken.mint(msg.sender, _amountcUSD * 10 ** 18); // cUSD follows 18 decimals
     }
 
     // Function to calculate total repayment amount (same as borrowed amount, no interest)
     function calculateRepaymentAmount(
         address user
     ) public view returns (uint256) {
-        return users[user].borrowedAmountSUSD;
+        return users[user].borrowedAmountcUSD;
     }
 
-    /// Repay borrowed amount (using SUSD tokens)
-    function repay(uint256 _amountSUSD) external {
-        require(users[msg.sender].borrowedAmountSUSD > 0, "No debt to repay");
+    /// Repay borrowed amount (using cUSD tokens)
+    function repay(uint256 _amountcUSD) external {
+        require(users[msg.sender].borrowedAmountcUSD > 0, "No debt to repay");
 
         // Get the total repayment amount
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
 
         // Check if the repayment amount is less than or equal to the total outstanding debt
-        require(_amountSUSD <= totalRepayment, "Amount exceeds total debt");
+        require(_amountcUSD <= totalRepayment, "Amount exceeds total debt");
 
-        // Transfer the SUSD tokens from the user to the contract
+        // Transfer the cUSD tokens from the user to the contract
         require(
-            susdToken.transferFrom(
+            cUSDToken.transferFrom(
                 msg.sender,
                 address(this),
-                _amountSUSD * 10 ** 18
+                _amountcUSD * 10 ** 18
             ),
             "Transfer failed"
         );
 
         // Update the user's debt
-        users[msg.sender].borrowedAmountSUSD -= _amountSUSD;
+        users[msg.sender].borrowedAmountcUSD -= _amountcUSD;
     }
 
     // Withdraw collateral function
@@ -123,11 +110,11 @@ contract LendingBorrowing {
     }
 
     function creditcalculation(
-        uint256 _amountSUSD
+        uint256 _amountcUSD
     ) public view returns (uint256) {
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
-        uint256 interest = (_amountSUSD * 10) / 100;
-        uint256 total = _amountSUSD + interest;
+        uint256 interest = (_amountcUSD * 10) / 100;
+        uint256 total = _amountcUSD + interest;
         return total;
     }
 
@@ -135,12 +122,12 @@ contract LendingBorrowing {
         uint256 ethPriceUSD = getLatestPrice();
         require(ethPriceUSD > 0, "Invalid price feed");
 
-        // Calculate maximum borrowable SUSD based on user's collateral
-        uint256 maxBorrowSUSD = (((users[msg.sender].collateralETH *
+        // Calculate maximum borrowable cUSD based on user's collateral
+        uint256 maxBorrowcUSD = (((users[msg.sender].collateralETH *
             (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
 
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
-        uint256 healthfactor = (maxBorrowSUSD - totalRepayment) / maxBorrowSUSD;
+        uint256 healthfactor = (maxBorrowcUSD - totalRepayment) / maxBorrowcUSD;
         return healthfactor;
     }
 }
