@@ -19,7 +19,7 @@ The Lending-Borrowing protocol allows users to deposit ETH as collateral and bor
 - **Smart Contracts:**
   - **LendingBorrowing Contract**: Manages ETH deposits, collateralization, cUSD borrowing, and debt repayment.
   - **Chainlink Price Feed Integration**: Fetches the ETH/USD price for collateral valuation. Uses chainlink price feed oracles.
-  - **SimpleUSDToken Contract**: Handles the minting, transferring, and burning of cUSD tokens.
+  - **capstoneUSD Contract**: Handles the minting, transferring, and burning of cUSD tokens.
 - **Frontend**:
   - Built with **React** and **Web3 integration** using **wagmi** and **viem** libraries.
   - Allows users to interact with the smart contracts, deposit ETH, borrow cUSD, and repay loans directly through the interface.

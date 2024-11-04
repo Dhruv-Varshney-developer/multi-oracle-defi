@@ -12,13 +12,13 @@ contract LendingBorrowing {
     mapping(address => User) public users;
     uint256 public constant collateralFactor = 20; // 20% collateral factor
     AggregatorV3Interface internal priceFeed;
-    SimpleUSDToken public cUSDToken;
+    capstoneUSD public cUSDToken;
 
     event Received(address indexed sender, uint256 amount);
 
     constructor(address priceFeedAddress, address _tokenAddress) {
         priceFeed = AggregatorV3Interface(priceFeedAddress);
-        cUSDToken = SimpleUSDToken(_tokenAddress);
+        cUSDToken = capstoneUSD(_tokenAddress);
     }
 
     // Deposit collateral (ETH) by the user
