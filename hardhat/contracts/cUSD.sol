@@ -1,7 +1,7 @@
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract capstoneUSD is ERC20 {
-    constructor() ERC20("capstoneUSD", "cUSD") {
+contract CapstoneUSD is ERC20 {
+    constructor() ERC20("CapstoneUSD", "cUSD") {
         // Mint some initial tokens for the contract's liquidity pool
         _mint(address(this), 1000000 * 10 ** 18); // 1 million cUSD tokens
     }
