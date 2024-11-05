@@ -18,6 +18,11 @@ contract CapstoneUSD is ERC20, Ownable {
         );
     }
 
+    // Mint function to mint new tokens (for simplicity)
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
     // Function to buy CUSD tokens using ETH
     function buy() external payable {
         // Get the latest ETH/USD price from Chainlink
