@@ -2,17 +2,21 @@
 pragma solidity ^0.8.22;
 
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {CapstoneUSD} from "contracts/CUSD.sol";
 
 contract LendingBorrowing {
     struct User {
         uint256 collateralETH;
         uint256 borrowedAmountCUSD;
+        uint256 lastInterestUpdate;
     }
 
     mapping(address => User) public users;
-    uint256 public constant collateralFactor = 20; // 20% collateral factor
+    uint256 public constant collateralFactor = 200; // 200% collateral factor
     AggregatorV3Interface internal priceFeed;
     CapstoneUSD public CUSDToken;
+    uint256 interestRate = 1; // 1% rate of interest
+    uint256 divideFactor = 1000; // divideFactor tells the amount by which interestRate will be divided to give per day interest
 
     event Received(address indexed sender, uint256 amount);
 
@@ -50,18 +54,29 @@ contract LendingBorrowing {
         uint256 maxBorrowCUSD = getMaxBorrowAmount();
         require(_amountCUSD <= maxBorrowCUSD, "Not enough ETH collateral");
 
-        // Update the user's borrowed amount
         users[msg.sender].borrowedAmountCUSD += _amountCUSD;
+        users[msg.sender].lastInterestUpdate = block.timestamp; // Record current time
 
-        // Transfer CUSD tokens to the user
-        CUSDToken.mint(msg.sender, _amountCUSD * 10 ** 18); // CUSD follows 18 decimals
+        CUSDToken.mint(msg.sender, _amountCUSD * 10 ** 18);
+    }
+
+    function accrueInterest(address user) internal view returns (uint256) {
+        User storage currentUser = users[user];
+        uint256 timeElapsed = (block.timestamp -
+            currentUser.lastInterestUpdate) / 1 days;
+        if (timeElapsed > 0) {
+            uint256 interest = (((currentUser.borrowedAmountCUSD *
+                interestRate) / divideFactor) * timeElapsed) / 100;
+            return currentUser.borrowedAmountCUSD + interest;
+        }
+        return currentUser.borrowedAmountCUSD;
     }
 
     // Function to calculate total repayment amount (same as borrowed amount, no interest)
     function calculateRepaymentAmount(
         address user
     ) public view returns (uint256) {
-        return users[user].borrowedAmountCUSD;
+        return accrueInterest(user); // Directly returns the updated borrowed amount with accrued interest
     }
 
     /// Repay borrowed amount (using CUSD tokens)
@@ -109,25 +124,15 @@ contract LendingBorrowing {
         emit Received(msg.sender, msg.value);
     }
 
-    function creditcalculation(
-        uint256 _amountCUSD
-    ) public view returns (uint256) {
-        uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
-        uint256 interest = (_amountCUSD * 10) / 100;
-        uint256 total = _amountCUSD + interest;
-        return total;
-    }
-
-    function healthfactor() public view returns (uint256) {
+    function health() public view returns (uint256) {
         uint256 ethPriceUSD = getLatestPrice();
         require(ethPriceUSD > 0, "Invalid price feed");
 
         // Calculate maximum borrowable CUSD based on user's collateral
-        uint256 maxBorrowCUSD = (((users[msg.sender].collateralETH *
-            (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
+        uint256 maxBorrowCUSD = getMaxBorrowAmount();
 
-        uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
-        uint256 healthfactor = (maxBorrowCUSD - totalRepayment) / maxBorrowCUSD;
+        uint256 healthfactor = (users[msg.sender].borrowedAmountCUSD) /
+            maxBorrowCUSD;
         return healthfactor;
     }
 }
