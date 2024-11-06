@@ -10,7 +10,7 @@ contract CapstoneUSD is ERC20, Ownable {
 
     constructor() ERC20("CapstoneUSD", "CUSD") Ownable(msg.sender) {
         // Mint some initial tokens for the contract's liquidity pool
-        _mint(address(this), 1000000 * 10 ** 18); // 1 million CUSD tokens
+        _mint(address(this), 1000000); // 1 million CUSD tokens
 
         //  Chainlink price feed for ETH/USD on Sepolia testnet
         priceFeed = AggregatorV3Interface(
@@ -30,7 +30,7 @@ contract CapstoneUSD is ERC20, Ownable {
 
         // Calculate the CUSD amount to mint based on the ETH amount sent and the current price
         uint256 cusdAmount = (msg.value * uint256(price)) / (10 ** 8);
-        _mint(msg.sender, cusdAmount * 10 ** 18);
+        _mint(msg.sender, cusdAmount);
     }
 
     // Withdraw function to allow the contract owner to withdraw all ETH from the contract
