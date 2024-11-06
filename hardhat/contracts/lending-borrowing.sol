@@ -57,7 +57,7 @@ contract LendingBorrowing {
         users[msg.sender].borrowedAmountCUSD += _amountCUSD;
         users[msg.sender].lastInterestUpdate = block.timestamp; // Record current time
 
-        CUSDToken.mint(msg.sender, _amountCUSD * 10 ** 18);
+        CUSDToken.mint(msg.sender, _amountCUSD );
     }
 
     function accrueInterest(address user) internal view returns (uint256) {
@@ -73,9 +73,11 @@ contract LendingBorrowing {
     }
 
     // Function to calculate total repayment amount (same as borrowed amount, no interest)
-    function calculateRepaymentAmount(
-        address user
-    ) public view returns (uint256) {
+    function calculateRepaymentAmount(address user)
+        public
+        view
+        returns (uint256)
+    {
         return accrueInterest(user); // Directly returns the updated borrowed amount with accrued interest
     }
 
@@ -94,7 +96,7 @@ contract LendingBorrowing {
             CUSDToken.transferFrom(
                 msg.sender,
                 address(this),
-                _amountCUSD * 10 ** 18
+                _amountCUSD 
             ),
             "Transfer failed"
         );
@@ -136,3 +138,4 @@ contract LendingBorrowing {
         return healthfactor;
     }
 }
+ƒ
