@@ -70,7 +70,7 @@ Since these functions are now overridden, _mint(to, 1000000) will now mint 10000
         (, int256 price, , , ) = priceFeed.latestRoundData();
 
         // Calculate the CUSD amount to mint based on the ETH amount sent and the current price
-        uint256 cusdAmount = (msg.value * uint256(price)) / (10 ** 8);
+        uint256 cusdAmount = (msg.value * uint256(price)) / ((10 ** 8) * (10 ** 18)); //msg.value is in wei
         _mint(msg.sender, cusdAmount);
     }
 
