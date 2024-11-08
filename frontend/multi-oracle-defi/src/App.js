@@ -22,7 +22,7 @@ const App = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: "white",
+        background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -44,7 +44,7 @@ const App = () => {
                 marginTop: "4rem",
                 fontSize: "3rem",
                 fontWeight: "bold",
-                color: "Black",
+                color: "white",
               }}
             >
               Capstone Labs
