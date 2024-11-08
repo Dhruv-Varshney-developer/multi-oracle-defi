@@ -34,14 +34,13 @@ contract CapstoneUSD is ERC20, Ownable {
 
     /* 
 @note ERC20 from openzeppelin mints tokens in smallest unit. We call it cents for this token. 
-To make sure, whenever any of mint, burn, transfer, approve, etc 
-is called we are actually minting tokens in CUSD and not cents, _update and _approve has been overridden.
+To make sure, whenever any of mint, burn, transfer, approve, etc is called we are actually minting tokens in CUSD and not cents, _update and _approve has been overridden.
 
 @Example 
 
 Let's say we call _mint function.
 
-If these functions were not overridden, _mint(to, 1000000) would mint 0.0000000000001 CUSD
+If these functions were not overridden, _mint(to, 1000000) would mint 0.0000000000001 CUSD.
 Since these functions are now overridden, _mint(to, 1000000) will now mint 1000000 CUSD.
 
 
@@ -70,7 +69,8 @@ Since these functions are now overridden, _mint(to, 1000000) will now mint 10000
         (, int256 price, , , ) = priceFeed.latestRoundData();
 
         // Calculate the CUSD amount to mint based on the ETH amount sent and the current price
-        uint256 cusdAmount = (msg.value * uint256(price)) / ((10 ** 8) * (10 ** 18)); //msg.value is in wei
+        uint256 cusdAmount = (msg.value * uint256(price)) /
+            ((10 ** 8) * (10 ** 18)); //msg.value is in wei
         _mint(msg.sender, cusdAmount);
     }
 

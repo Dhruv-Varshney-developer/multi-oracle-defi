@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LendingBorrowing is Ownable {
     struct User {
-        uint256 collateralETH; // collateralETH is stored in wei
+        uint256 collateralWei; // collateralWei is stored in wei
         uint256 borrowedAmountCUSD; //borrowedAmountCUSD is in CUSD only.
         uint256 lastInterestUpdate;
     }
@@ -18,12 +18,12 @@ contract LendingBorrowing is Ownable {
     AggregatorV3Interface internal priceFeed;
     CapstoneUSD public CUSDToken;
     uint256 public interestRate = 1; // 1% rate of interest
-    uint256 public divideFactor = 1000; // divideFactor tells the amount by which interestRate will be divided to give per day interest
+    uint256 public divideFactor = 1; // divideFactor tells the amount by which interestRate will be divided to give per day interest
 
     // Events for automation tools
     event Received(address indexed sender, uint256 amount);
-    event CollateralDeposited(address indexed user, uint256 amountETH);
-    event CollateralWithdrawn(address indexed user, uint256 amountETH);
+    event CollateralDeposited(address indexed user, uint256 amountWei);
+    event CollateralWithdrawn(address indexed user, uint256 amountWei);
     event Borrowed(address indexed user, uint256 amountCUSD);
     event Repaid(address indexed user, uint256 amountCUSD);
     event InterestAccrued(
@@ -31,25 +31,23 @@ contract LendingBorrowing is Ownable {
         uint256 newBorrowedAmount,
         uint256 interestAmount
     );
-    event HealthFactorUpdated(address indexed user, uint256 newHealthFactor);
     event DivideFactorUpdated(uint256 newDivideFactor);
     event CollateralFactorUpdated(uint256 newCollateralFactor);
     event InterestRateUpdated(uint256 newInterestRate);
 
-    constructor(
-        address priceFeedAddress,
-        address _tokenAddress
-    ) Ownable(msg.sender) {
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+    constructor(address _tokenAddress) Ownable(msg.sender) {
+        priceFeed = AggregatorV3Interface(
+            0x694AA1769357215DE4FAC081bf1f309aDC325306
+        );
         CUSDToken = CapstoneUSD(_tokenAddress);
     }
 
-    // Deposit collateral (ETH) by the user
+    // Deposit collateral (Wei) by the user
     function depositCollateral() external payable {
         require(msg.value > 0, "Must send some ETH");
-        users[msg.sender].collateralETH += msg.value;
+        users[msg.sender].collateralWei += msg.value;
 
-        emit CollateralDeposited(msg.sender, msg.value); // Emit event
+        emit CollateralDeposited(msg.sender, msg.value); // Emit event - value is in wei
     }
 
     // Function to get the latest ETH/USD price
@@ -63,10 +61,9 @@ contract LendingBorrowing is Ownable {
         uint256 ethPriceUSD = getLatestPrice();
         require(ethPriceUSD > 0, "Invalid price feed");
 
-        // Calculate maximum borrowable CUSD based on user's collateral.
-        uint256 maxBorrowCUSD = ((
-            ((users[msg.sender].collateralETH / 1e18) * (ethPriceUSD / 1e8))
-        ) * collateralFactor) / 100;
+        // Calculate maximum borrowable SUSD based on user's collateral
+        uint256 maxBorrowCUSD = (((users[msg.sender].collateralWei *
+            (ethPriceUSD / 1e8)) / 1e18) * collateralFactor) / 100;
 
         return maxBorrowCUSD;
     }
@@ -84,25 +81,29 @@ contract LendingBorrowing is Ownable {
         emit Borrowed(msg.sender, _amountCUSD); // Emit event
     }
 
-    function accrueInterest(address user) internal view returns (uint256) {
+    function accrueInterest(address user) private returns (uint256) {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
-            currentUser.lastInterestUpdate) / 1 days;
-        uint256 totalInterest = 0;
+            currentUser.lastInterestUpdate) / 1 seconds; //seconds kept for testing purposes
 
         if (timeElapsed > 0) {
-            uint256 interest = (((currentUser.borrowedAmountCUSD *
-                interestRate) / divideFactor) * timeElapsed) / 100;
-            totalInterest = interest;
-        }
+            uint256 interest = ((currentUser.borrowedAmountCUSD *
+                interestRate *
+                timeElapsed) / (100 * divideFactor));
+            currentUser.borrowedAmountCUSD += interest;
+            currentUser.lastInterestUpdate = block.timestamp; // update last interest accrued timestamp
 
-        return currentUser.borrowedAmountCUSD + totalInterest;
+            emit InterestAccrued(
+                user,
+                currentUser.borrowedAmountCUSD,
+                interest
+            );
+        }
+        return currentUser.borrowedAmountCUSD;
     }
 
     // Function to calculate total repayment amount (same as borrowed amount, no interest)
-    function calculateRepaymentAmount(
-        address user
-    ) public view returns (uint256) {
+    function calculateRepaymentAmount(address user) public returns (uint256) {
         return accrueInterest(user); // Directly returns the updated borrowed amount with accrued interest
     }
 
@@ -129,21 +130,21 @@ contract LendingBorrowing is Ownable {
     }
 
     // Withdraw collateral function
-    function withdrawCollateral(uint256 _amountETH) external {
+    function withdrawCollateral(uint256 _amountWei) external {
         // Check if the user's debt is fully repaid
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
         require(totalRepayment == 0, "Can't withdraw, debt not fully repaid");
 
         require(
-            users[msg.sender].collateralETH >= _amountETH,
+            users[msg.sender].collateralWei >= _amountWei,
             "Not enough collateral deposited"
         );
 
         // Update user's collateral balance and transfer ETH back to the user
-        users[msg.sender].collateralETH -= _amountETH;
-        payable(msg.sender).transfer(_amountETH);
+        users[msg.sender].collateralWei -= _amountWei;
+        payable(msg.sender).transfer(_amountWei);
 
-        emit CollateralWithdrawn(msg.sender, _amountETH); // Emit event
+        emit CollateralWithdrawn(msg.sender, _amountWei); // Emit event
     }
 
     // Function to allow the contract to accept plain ETH transfers
@@ -151,7 +152,7 @@ contract LendingBorrowing is Ownable {
         emit Received(msg.sender, msg.value);
     }
 
-    function health() public returns (uint256) {
+    function health() public view returns (uint256) {
         uint256 ethPriceUSD = getLatestPrice();
         require(ethPriceUSD > 0, "Invalid price feed");
 
@@ -161,19 +162,7 @@ contract LendingBorrowing is Ownable {
         uint256 healthfactor = (users[msg.sender].borrowedAmountCUSD * 100) /
             maxBorrowCUSD;
 
-        // Emit health factor update
-        emit HealthFactorUpdated(msg.sender, healthfactor);
-
         return healthfactor;
-    }
-
-    // Extra event to notify when interest is accrued
-    function interestAccrued(address user) internal {
-        uint256 newAmount = accrueInterest(user);
-        uint256 interestAmount = newAmount - users[user].borrowedAmountCUSD;
-
-        // Emit event
-        emit InterestAccrued(user, newAmount, interestAmount);
     }
 
     function setCollateralFactor(uint256 _collateralFactor) external onlyOwner {
