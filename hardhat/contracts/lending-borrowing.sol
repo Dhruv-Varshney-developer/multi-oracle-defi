@@ -102,7 +102,7 @@ contract LendingBorrowing is Ownable {
         return currentUser.borrowedAmountCUSD;
     }
 
-    // Function to calculate total repayment amount (same as borrowed amount, no interest)
+    // Function to calculate total repayment amount
     function calculateRepaymentAmount(address user) public returns (uint256) {
         return accrueInterest(user); // Directly returns the updated borrowed amount with accrued interest
     }
