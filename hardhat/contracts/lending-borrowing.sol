@@ -81,38 +81,28 @@ contract LendingBorrowing is Ownable {
         emit Borrowed(msg.sender, _amountCUSD); // Emit event
     }
 
-    function accrueInterest(address user) private returns (uint256) {
+    function calculateRepaymentAmount(
+        address user
+    ) public view returns (uint256) {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
             currentUser.lastInterestUpdate) / 1 seconds; //seconds kept for testing purposes
-
+        uint256 interest = 0;
         if (timeElapsed > 0) {
-            uint256 interest = ((currentUser.borrowedAmountCUSD *
+            interest = ((currentUser.borrowedAmountCUSD *
                 interestRate *
                 timeElapsed) / (100 * divideFactor));
-            currentUser.borrowedAmountCUSD += interest;
-            currentUser.lastInterestUpdate = block.timestamp; // update last interest accrued timestamp
-
-            emit InterestAccrued(
-                user,
-                currentUser.borrowedAmountCUSD,
-                interest
-            );
         }
-        return currentUser.borrowedAmountCUSD;
-    }
-
-    // Function to calculate total repayment amount
-    function calculateRepaymentAmount(address user) public returns (uint256) {
-        return accrueInterest(user); // Directly returns the updated borrowed amount with accrued interest
+        return currentUser.borrowedAmountCUSD + interest;
     }
 
     /// Repay borrowed amount (using CUSD tokens)
     function repay(uint256 _amountCUSD) external {
-        require(users[msg.sender].borrowedAmountCUSD > 0, "No debt to repay");
-
-        // Get the total repayment amount
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
+
+        users[msg.sender].borrowedAmountCUSD = totalRepayment;
+
+        require(users[msg.sender].borrowedAmountCUSD > 0, "No debt to repay");
 
         // Check if the repayment amount is less than or equal to the total outstanding debt
         require(_amountCUSD <= totalRepayment, "Amount exceeds total debt");
@@ -125,6 +115,7 @@ contract LendingBorrowing is Ownable {
 
         // Update the user's debt
         users[msg.sender].borrowedAmountCUSD -= _amountCUSD;
+        users[msg.sender].lastInterestUpdate = block.timestamp;
 
         emit Repaid(msg.sender, _amountCUSD); // Emit event
     }
