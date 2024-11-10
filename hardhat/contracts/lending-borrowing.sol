@@ -78,12 +78,14 @@ contract LendingBorrowing is Ownable {
 
         CUSDToken.mint(msg.sender, _amountCUSD);
 
-        emit Borrowed(msg.sender, _amountCUSD ); // Emit event
+        emit Borrowed(msg.sender, _amountCUSD); // Emit event
     }
 
-    function calculateRepaymentAmount(
-        address user
-    ) public view returns (uint256) {
+    function calculateRepaymentAmount(address user)
+        public
+        view
+        returns (uint256)
+    {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
             currentUser.lastInterestUpdate) / 1 seconds; //seconds kept for testing purposes
@@ -96,25 +98,49 @@ contract LendingBorrowing is Ownable {
         return currentUser.borrowedAmountCUSD + interest;
     }
 
+    function updateBorrowedAmountWithInterest(address user) external onlyOwner {
+        User storage currentUser = users[user];
+        uint256 timeElapsed = (block.timestamp -
+            currentUser.lastInterestUpdate) / 1 seconds;
+
+        if (timeElapsed > 0) {
+            uint256 interest = ((currentUser.borrowedAmountCUSD *
+                interestRate *
+                timeElapsed) / (100 * divideFactor));
+
+            currentUser.borrowedAmountCUSD += interest;
+            currentUser.lastInterestUpdate = block.timestamp;
+
+            emit InterestAccrued(
+                user,
+                currentUser.borrowedAmountCUSD,
+                interest
+            );
+        }
+    }
+
     /// Repay borrowed amount (using CUSD tokens)
     function repay(uint256 _amountCUSD) external {
+        // Calculate the latest debt including interest
         uint256 totalRepayment = calculateRepaymentAmount(msg.sender);
-
-        users[msg.sender].borrowedAmountCUSD = totalRepayment;
-
-        require(users[msg.sender].borrowedAmountCUSD > 0, "No debt to repay");
 
         // Check if the repayment amount is less than or equal to the total outstanding debt
         require(_amountCUSD <= totalRepayment, "Amount exceeds total debt");
 
+        require(totalRepayment > 0, "No debt to repay");
+
         // Transfer the CUSD tokens from the user to the contract
         require(
-            CUSDToken.transferFrom(msg.sender, address(this), _amountCUSD * (10 ** 18)),
+            CUSDToken.transferFrom(
+                msg.sender,
+                address(this),
+                _amountCUSD * (10**18)
+            ),
             "Transfer failed"
         );
 
         // Update the user's debt
-        users[msg.sender].borrowedAmountCUSD -= _amountCUSD;
+        users[msg.sender].borrowedAmountCUSD = totalRepayment - _amountCUSD;
         users[msg.sender].lastInterestUpdate = block.timestamp;
 
         emit Repaid(msg.sender, _amountCUSD); // Emit event
