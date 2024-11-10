@@ -78,7 +78,7 @@ contract LendingBorrowing is Ownable {
 
         CUSDToken.mint(msg.sender, _amountCUSD);
 
-        emit Borrowed(msg.sender, _amountCUSD); // Emit event
+        emit Borrowed(msg.sender, _amountCUSD ); // Emit event
     }
 
     function calculateRepaymentAmount(
@@ -109,7 +109,7 @@ contract LendingBorrowing is Ownable {
 
         // Transfer the CUSD tokens from the user to the contract
         require(
-            CUSDToken.transferFrom(msg.sender, address(this), _amountCUSD),
+            CUSDToken.transferFrom(msg.sender, address(this), _amountCUSD * (10 ** 18)),
             "Transfer failed"
         );
 
