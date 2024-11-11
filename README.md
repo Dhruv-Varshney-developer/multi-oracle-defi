@@ -12,17 +12,17 @@ This project showcases the integration of smart contracts with Chainlink oracles
 
 #### Description
 
-The Lending-Borrowing protocol allows users to deposit ETH as collateral and borrow CUSD (Simple USD Token). The collateral value is determined using Chainlink's ETH/USD price feed, ensuring accurate and up-to-date price data. Borrowers can withdraw up to 20% of their collateral’s value in CUSD, a token minted by the protocol.
+The Lending-Borrowing protocol allows users to deposit ETH as collateral and borrow SUSD (Simple USD Token). The collateral value is determined using Chainlink's ETH/USD price feed, ensuring accurate and up-to-date price data. Borrowers can withdraw up to 20% of their collateral’s value in SUSD, a token minted by the protocol.
 
 #### Technical Architecture
 
 - **Smart Contracts:**
-  - **LendingBorrowing Contract**: Manages ETH deposits, collateralization, CUSD borrowing, and debt repayment.
+  - **LendingBorrowing Contract**: Manages ETH deposits, collateralization, SUSD borrowing, and debt repayment.
   - **Chainlink Price Feed Integration**: Fetches the ETH/USD price for collateral valuation. Uses chainlink price feed oracles.
-  - **CapstoneUSD Contract**: Handles the minting, transferring, and burning of CUSD tokens.
+  - **SimpleUSDToken Contract**: Handles the minting, transferring, and burning of SUSD tokens.
 - **Frontend**:
   - Built with **React** and **Web3 integration** using **wagmi** and **viem** libraries.
-  - Allows users to interact with the smart contracts, deposit ETH, borrow CUSD, and repay loans directly through the interface.
+  - Allows users to interact with the smart contracts, deposit ETH, borrow SUSD, and repay loans directly through the interface.
 
 ### 2. Price Feed Display
 
