@@ -1,4 +1,4 @@
 hardhat/contracts/artifacts/
 .deps
-
+.deploys
 .prettierrc.json
