@@ -27,11 +27,7 @@ contract LendingBorrowing is Ownable {
     event CollateralWithdrawn(address indexed user, uint256 amountWei);
     event Borrowed(address indexed user, uint256 amountCUSD);
     event Repaid(address indexed user, uint256 amountCUSD);
-    event InterestAccrued(
-        address indexed user,
-        uint256 newBorrowedAmount,
-        uint256 interestAmount
-    );
+    event InterestAccrued(address indexed user, uint256 newBorrowedAmount);
     event DivideFactorUpdated(uint256 newDivideFactor);
     event CollateralFactorUpdated(uint256 newCollateralFactor);
     event InterestRateUpdated(uint256 newInterestRate);
@@ -92,7 +88,7 @@ contract LendingBorrowing is Ownable {
     {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
-            currentUser.lastInterestUpdate) / 1 seconds; //seconds kept for testing purposes
+            currentUser.lastInterestUpdate) / 10 minutes;
         uint256 interest = 0;
         if (timeElapsed > 0) {
             interest = ((currentUser.borrowedAmountCUSD *
@@ -125,24 +121,13 @@ contract LendingBorrowing is Ownable {
     }
 
     function updateBorrowedAmountWithInterest(address user) internal {
+        uint256 repayment = calculateRepaymentAmount(user);
         User storage currentUser = users[user];
-        uint256 timeElapsed = (block.timestamp -
-            currentUser.lastInterestUpdate) / 1 minutes;
 
-        if (timeElapsed > 0) {
-            uint256 interest = ((currentUser.borrowedAmountCUSD *
-                interestRate *
-                timeElapsed) / (100 * divideFactor));
+        currentUser.borrowedAmountCUSD = repayment;
+        currentUser.lastInterestUpdate = block.timestamp;
 
-            currentUser.borrowedAmountCUSD += interest;
-            currentUser.lastInterestUpdate = block.timestamp;
-
-            emit InterestAccrued(
-                user,
-                currentUser.borrowedAmountCUSD,
-                interest
-            );
-        }
+        emit InterestAccrued(user, currentUser.borrowedAmountCUSD);
     }
 
     /// Repay borrowed amount (using CUSD tokens)
