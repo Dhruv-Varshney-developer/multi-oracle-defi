@@ -5,6 +5,7 @@ import "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 import "@openzeppelin/contracts/utils/Base64.sol";
 
 contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
@@ -24,6 +25,11 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     mapping(address => uint256) public lastMintTime;
 
     uint256 constant public mintInterval = 5 minutes;
+
+    // Address of the CUSD ERC20 token
+    IERC20 public cUSD;
+    uint256 public constant cUSDAmount = 0.001 * 10 ** 18; // 0.001 tokens in 18 decimal format
+    address public constant cUSDAddress = 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A; //CapstoneUSD token 
 
      // Base URL for images
     string private baseImageURL = "https://tomato-genuine-parrot-12.mypinata.cloud/ipfs/QmXiSniGSGi92ETvdCMEbgXQJc2q4p5JYUwQ6SsJgpH4yP/";
@@ -58,10 +64,11 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
     event NFTMinted(uint256 tokenId, address owner);
 
-    constructor() ERC721("CapstoneLabsNFT", "CLN") VRFConsumerBaseV2Plus(0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2) {
-        subscriptionId = 103476436659143114776284521134562088597934666786628593221376876035364487025273;
-        keyHash = 0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899;
+    constructor() ERC721("CapstoneLabsNFT", "CLN") VRFConsumerBaseV2Plus(0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B) {
+        subscriptionId = 71464033757340969494714285700721349424487006043208639418341710426840418521506;
+        keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
         tokenCounter = 0;
+        cUSD = IERC20(cUSDAddress); //CapstoneUSD
     }
 
     modifier canMint() {
@@ -70,6 +77,9 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     }
 
     function requestRandomWords() public canMint {
+        // Transfer the payment amount from the user to this contract
+        require(cUSD.transferFrom(msg.sender, address(this), cUSDAmount), "Token transfer failed.");
+
         requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
