@@ -12,7 +12,7 @@ contract LendingBorrowing is Ownable {
         uint256 borrowedAmountCUSD; //borrowedAmountCUSD is in CUSD only.
         uint256 lastInterestUpdate;
     }
-
+    address[] public userAddresses; // Array to track user addresses
     mapping(address => User) public users;
     uint256 public collateralFactor = 200; // 200% collateral factor
     AggregatorV3Interface internal priceFeed;
@@ -73,6 +73,9 @@ contract LendingBorrowing is Ownable {
         uint256 maxBorrowCUSD = getMaxBorrowAmount();
         require(_amountCUSD <= maxBorrowCUSD, "Not enough ETH collateral");
 
+        if (users[msg.sender].borrowedAmountCUSD == 0) {
+            userAddresses.push(msg.sender); // Track user address only if first-time borrow
+        }
         users[msg.sender].borrowedAmountCUSD += _amountCUSD;
         users[msg.sender].lastInterestUpdate = block.timestamp; // Record current time
 
@@ -98,10 +101,18 @@ contract LendingBorrowing is Ownable {
         return currentUser.borrowedAmountCUSD + interest;
     }
 
-    function updateBorrowedAmountWithInterest(address user) external onlyOwner {
+    // Batch update function to update interest for all users
+    function updateAllBorrowedAmountsWithInterest() external onlyOwner {
+        for (uint256 i = 0; i < userAddresses.length; i++) {
+            address user = userAddresses[i];
+            updateBorrowedAmountWithInterest(user); // Call the existing update function per user
+        }
+    }
+
+    function updateBorrowedAmountWithInterest(address user) internal {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
-            currentUser.lastInterestUpdate) / 1 seconds;
+            currentUser.lastInterestUpdate) / 1 minutes;
 
         if (timeElapsed > 0) {
             uint256 interest = ((currentUser.borrowedAmountCUSD *
@@ -144,6 +155,17 @@ contract LendingBorrowing is Ownable {
         users[msg.sender].lastInterestUpdate = block.timestamp;
 
         emit Repaid(msg.sender, _amountCUSD); // Emit event
+
+        // Remove user from userAddresses if debt is fully repaid
+        if (users[msg.sender].borrowedAmountCUSD == 0) {
+            for (uint256 i = 0; i < userAddresses.length; i++) {
+                if (userAddresses[i] == msg.sender) {
+                    userAddresses[i] = userAddresses[userAddresses.length - 1];
+                    userAddresses.pop();
+                    break;
+                }
+            }
+        }
     }
 
     // Withdraw collateral function
