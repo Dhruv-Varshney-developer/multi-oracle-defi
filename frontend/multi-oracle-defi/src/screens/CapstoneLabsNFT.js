@@ -17,7 +17,8 @@ import { ArrowBack, ArrowForward } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json"; 
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
-import spinWheelTex from '../assets/wheel.svg';
+//import spinWheelTex from '../assets/wheel.svg';
+import WheelComponent from 'react-wheel-of-prizes';
 
 
 const contractAddress = '0xE02305bEe7eec39b831e60b9976bcd63Fc45d1Ec';
@@ -25,7 +26,7 @@ const contractAddress = '0xE02305bEe7eec39b831e60b9976bcd63Fc45d1Ec';
 const NFT = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [spinning, setSpinning] = useState(false);  // For wheel animation
+  const [wheelEnabled, setWheelEnabled] = useState(false);
   const [lastMintTimestamp, setLastMintTimestamp] = useState(null);  // Timestamp control
   const [tokenId, setTokenId] = useState('');
   const [requestId, setRequestId] = useState(null);
@@ -135,6 +136,17 @@ const NFT = () => {
    
   //--------------------------------------------------------------------------------
   //Styled Components
+  const segments = ['Extra 1%', 'Extra 2%', 'Diamond Heart', 'Mystic Star'];
+  const segColors = ['#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A'];
+
+  const StyledWheelContainer = styled(Box)({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '2rem',
+    width: '100%',
+  });
+
   const StyledCardContainer = styled(Box)({
     display: 'flex',
     justifyContent: 'center',
@@ -182,7 +194,7 @@ const NFT = () => {
     color: "white",
   }));
 
-  const SpinWheel = styled(Box)(({ spinning }) => ({
+/*  const SpinWheel = styled(Box)(({ spinning }) => ({
     width: '400px',
     height: '400px',
     borderRadius: '50%',
@@ -199,7 +211,7 @@ const NFT = () => {
       '100%': { transform: 'rotate(360deg)' },
     },
     zIndex: 1,
-  }));
+  }));*/
 
    // InfoCard component to display NFT info with image
    const InfoCard = ({ name, reward, image }) => (
@@ -253,12 +265,10 @@ const NFT = () => {
   return (
     <Container sx={{ padding: "2rem", textAlign: 'center', background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", height: "100vh" }}>
       <Typography variant="h4" component="h1" sx={{ marginBottom: "2rem", color: "white" }}>
-        DAILY NFT MINTING FOR EXTRA REWARDS
+      Spin the wheel to mint a unique Capstone Labs NFT with extra rewards! Pay with CUSD to spin.
       </Typography>
 
       <StyledCardContainer>
-      <StyledCard>
-        <SpinWheel spinning={spinning.toString()}>NFT</SpinWheel>
         <StyledButton onClick={async () => {
               if (loading) return;           
               const now = Date.now(); // Set timestamp
@@ -270,7 +280,7 @@ const NFT = () => {
                 return;
               }
 
-              setSpinning(true); // Start spinning animation
+              /*setSpinning(true); // Start spinning animation*/
               setLoading(true); // Keep spinning while requestVRF+minting
               setProgressMessage("Requesting Random Number");
 
@@ -349,13 +359,30 @@ const NFT = () => {
                 setProgressMessage(null);
               } finally {
                 setLoading(false);
-                setSpinning(false);
+                //setSpinning(false);
               }
             }
           } disabled={loading}>
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Mint'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Pay 10 cUSD to Mint'}
         </StyledButton>
-      </StyledCard>
+
+        {wheelEnabled && (
+        <StyledWheelContainer>
+          <WheelComponent
+            segments={segments}
+            segColors={segColors}
+            primaryColor="blue"
+            contrastColor="white"
+            buttonText="Spin"
+            isOnlyOnce={false}
+            size={250}
+            upDuration={100}
+            downDuration={500}
+            fontFamily="Arial"
+          />
+        </StyledWheelContainer>
+      )}
+
 
       {mintedNFT ? (
           <InfoCard
