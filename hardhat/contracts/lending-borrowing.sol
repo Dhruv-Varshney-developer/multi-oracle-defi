@@ -19,6 +19,7 @@ contract LendingBorrowing is Ownable {
     CapstoneUSD public CUSDToken;
     uint256 public interestRate = 1; // 1% rate of interest
     uint256 public divideFactor = 1; // divideFactor tells the amount by which interestRate will be divided to give per day interest
+    address public relayer;
 
     // Events for automation tools
     event Received(address indexed sender, uint256 amount);
@@ -101,8 +102,22 @@ contract LendingBorrowing is Ownable {
         return currentUser.borrowedAmountCUSD + interest;
     }
 
+    modifier onlyAuthorized() {
+        require(
+            msg.sender == owner() || msg.sender == relayer,
+            "Not authorized"
+        );
+        _;
+    }
+
+    // Function to update the relayer address, accessible only by the contract owner
+    function setRelayer(address _relayer) external onlyOwner {
+        require(_relayer != address(0), "Relayer address cannot be zero");
+        relayer = _relayer;
+    }
+
     // Batch update function to update interest for all users
-    function updateAllBorrowedAmountsWithInterest() external onlyOwner {
+    function updateAllBorrowedAmountsWithInterest() external onlyAuthorized {
         for (uint256 i = 0; i < userAddresses.length; i++) {
             address user = userAddresses[i];
             updateBorrowedAmountWithInterest(user); // Call the existing update function per user
