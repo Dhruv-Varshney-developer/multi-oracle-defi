@@ -44,7 +44,7 @@ const Card = ({ title, route, isConnected }) => {
         whileTap={isConnected ? { scale: 0.9 } : {}}
         disabled={!isConnected}
       >
-        {isConnected ? title : 'Connect Wallet'} 
+        {isConnected ? 'Enter' : 'Connect Wallet'} 
         {isConnected && <ArrowRightIcon style={{ width: '1.25rem', height: '1.25rem', marginLeft: '0.5rem' }} />}
       </motion.button>
     </motion.div>

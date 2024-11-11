@@ -130,7 +130,7 @@
     "name": "susdToken",
     "outputs": [
       {
-        "internalType": "contract CapstoneUSDToken",
+        "internalType": "contract SimpleUSDToken",
         "name": "",
         "type": "address"
       }
