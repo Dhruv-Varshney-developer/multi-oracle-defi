@@ -6,6 +6,12 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interf
 import {CapstoneUSD} from "./CUSD.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+
+
+interface IPUSHCommInterface {
+    function sendNotification(address _channel, address _recipient, bytes calldata _identity) external;
+}
+
 contract LendingBorrowing is Ownable {
     struct User {
         uint256 collateralWei; // collateralWei is stored in wei
