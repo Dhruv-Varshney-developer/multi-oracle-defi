@@ -79,6 +79,9 @@ We welcome contributions! Please read our [contributions.md](contributions.md) f
 
 The project is live [here](https://multi-oracle-defi.vercel.app/).
 
+CUSD token contract is deployed on sepolia testnet at 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A
+LendingBorrowing contract is deployed on sepolia testnet at 0x1e88e0dc3924D9869A1Ed7d86197341dd459CF48
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
