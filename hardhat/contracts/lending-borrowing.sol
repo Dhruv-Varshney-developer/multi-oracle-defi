@@ -146,7 +146,6 @@ contract LendingBorrowing is Ownable {
                     "Collateral ETH (in wei): ",
                     currentUser.collateralWei.toString(),
                     "\n",
-                    "%\n",
                     "Last Updated: ",
                     ((block.timestamp - lastUpdated) / 60).toString(),
                     " minutes ago"
