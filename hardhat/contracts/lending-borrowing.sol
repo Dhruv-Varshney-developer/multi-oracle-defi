@@ -28,7 +28,7 @@ contract LendingBorrowing is Ownable {
     CapstoneUSD public CUSDToken;
     uint256 public interestRate = 1;
     uint256 public divideFactor = 1;
-    address public relayer;
+    address public relayer = 0xc87369DB6c1AD5c3B9b3e737cCd6D30d0A939FAB;
     address public EPNS_COMM_ADDRESS =
         0x0C34d54a09CFe75BCcd878A469206Ae77E0fe6e7;
     using Strings for uint256;
@@ -93,7 +93,7 @@ contract LendingBorrowing is Ownable {
     {
         User storage currentUser = users[user];
         uint256 timeElapsed = (block.timestamp -
-            currentUser.lastInterestUpdate) / 10 minutes;
+            currentUser.lastInterestUpdate) / 1 minutes;
         uint256 interest = 0;
         if (timeElapsed > 0) {
             interest = ((currentUser.borrowedAmountCUSD *
@@ -130,8 +130,7 @@ contract LendingBorrowing is Ownable {
         currentUser.borrowedAmountCUSD = repayment;
         currentUser.lastInterestUpdate = block.timestamp;
 
-        uint256 collateralETH = currentUser.collateralWei / 1e18;
-        uint256 healthFactor = health();
+       
         uint256 lastUpdated = currentUser.lastInterestUpdate;
 
         sendNotification(
@@ -143,11 +142,9 @@ contract LendingBorrowing is Ownable {
                     "Borrowed CUSD: ",
                     currentUser.borrowedAmountCUSD.toString(),
                     "\n",
-                    "Collateral ETH: ",
-                    collateralETH.toString(),
+                    "Collateral ETH (in wei): ",
+                    currentUser.collateralWei.toString(),
                     "\n",
-                    "Health Factor: ",
-                    healthFactor.toString(),
                     "%\n",
                     "Last Updated: ",
                     ((block.timestamp - lastUpdated) / 60).toString(),
@@ -210,17 +207,6 @@ contract LendingBorrowing is Ownable {
     }
 
     receive() external payable {}
-
-    function health() public view returns (uint256) {
-        uint256 ethPriceUSD = getLatestPrice();
-        require(ethPriceUSD > 0, "Invalid price feed");
-
-        uint256 maxBorrowCUSD = getMaxBorrowAmount();
-        uint256 healthfactor = (users[msg.sender].borrowedAmountCUSD * 100) /
-            maxBorrowCUSD;
-
-        return healthfactor;
-    }
 
     function setCollateralFactor(uint256 _collateralFactor) external onlyOwner {
         collateralFactor = _collateralFactor;
