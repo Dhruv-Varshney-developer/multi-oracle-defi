@@ -38,7 +38,10 @@ export const ActionPanel = ({
   writeTxData,
   isWriteLoading,
   isTxLoading,
-  triggerNotification,
+  isSubscribed,
+  optInToNotifications,
+  optOutOfNotifications,
+  isLoadingNotif,
 }) => {
   const renderStatusInfo = () => {
     return (
@@ -109,9 +112,14 @@ export const ActionPanel = ({
         <StyledButton
           fullWidth
           variant="contained"
-          onClick={triggerNotification}
+          onClick={isSubscribed ? optOutOfNotifications : optInToNotifications}
+          disabled={isLoading}
         >
-          Opt-in for Notifications
+          {isLoadingNotif
+            ? "Processing..."
+            : isSubscribed
+            ? "Opt-out of Notifications"
+            : "Opt-in for Notifications"}
         </StyledButton>
 
         {renderStatusInfo()}
