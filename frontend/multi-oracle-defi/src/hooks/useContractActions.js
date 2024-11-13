@@ -27,13 +27,13 @@ export const useContractActions = (
           address: lendingContractAddress,
           abi: LendingBorrowingABI,
           functionName: "borrow",
-          args: [amount],
+          args: [parseEther(amount)],
         },
         repay: {
           address: lendingContractAddress,
           abi: LendingBorrowingABI,
           functionName: "repay",
-          args: [amount],
+          args: [parseEther(amount)],
         },
         withdraw: {
           address: lendingContractAddress,
@@ -47,6 +47,12 @@ export const useContractActions = (
           functionName: "depositCollateral",
           value: parseEther(amount),
         },
+        buy: {
+          address: CUSDContractAddress,
+          abi: CUSDABI,
+          functionName: "buy",
+          value: parseEther(amount),
+        },
       };
 
       await writeContract(actions[action]);
@@ -55,13 +61,13 @@ export const useContractActions = (
     }
   };
 
-  const handleApprove = async () => {
+  const handleApprove = async (amount) => {
     try {
       await writeContract({
         address: CUSDContractAddress,
         abi: CUSDABI,
         functionName: "approve",
-        args: [lendingContractAddress, 1000000],
+        args: [lendingContractAddress, parseEther(amount)],
       });
     } catch (error) {
       console.error("Approve error:", error);
