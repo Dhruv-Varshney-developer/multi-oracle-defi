@@ -26,9 +26,17 @@ export const useUserData = (lendingContractAddress, CUSDContractAddress) => {
     args: [address],
   });
 
+  const { data: repaymentAmount } = useReadContract({
+    address: lendingContractAddress,
+    abi: LendingBorrowingABI,
+    functionName: "calculateRepaymentAmount",
+    args: [address],
+  });
+
   return {
     maxBorrow,
     userData,
     userCUSDBalance,
+    repaymentAmount,
   };
 };

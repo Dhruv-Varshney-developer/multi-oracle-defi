@@ -25,7 +25,7 @@ const LendingBorrowing = () => {
     divideFactor,
   } = useProtocolData(lendingContractAddress, CUSDContractAddress);
 
-  const { maxBorrow, userData, userCUSDBalance } = useUserData(
+  const { maxBorrow, userData, userCUSDBalance, repaymentAmount } = useUserData(
     lendingContractAddress,
     CUSDContractAddress
   );
@@ -131,8 +131,10 @@ const LendingBorrowing = () => {
                     : "0 CUSD",
                 },
                 {
-                  label: "Borrowed Amount",
-                  value: userData ? `${Number(userData[1])} CUSD` : "0 CUSD",
+                  label: "Repayment Amount",
+                  value: repaymentAmount
+                    ? `${Number(formatEther(repaymentAmount))} CUSD`
+                    : "0 CUSD",
                 },
                 {
                   label: "Max Borrowable CUSD",
