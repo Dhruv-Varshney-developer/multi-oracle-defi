@@ -7,31 +7,45 @@
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@heroicons/react": "^2.1.5",
+    "@livekit/components-react": "^2.6.7",
     "@mui/icons-material": "^6.1.5",
     "@mui/material": "^6.1.5",
+    "@pushprotocol/restapi": "^1.7.29",
+    "@pushprotocol/uiweb": "^1.7.2",
     "@tanstack/react-query": "^5.59.13",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "alchemy-sdk": "^3.4.4",
+    "assert": "^2.1.0",
+    "browserify-zlib": "^0.2.0",
+    "buffer": "^6.0.3",
     "connectkit": "^1.8.2",
-    "framer": "^2.4.1",
     "ethers": "^5.7.2",
-    "framer-motion": "^11.11.8",
+    "framer": "^2.4.1",
+    "framer-motion": "^11.11.15",
+    "https-browserify": "^1.0.0",
     "lucide-react": "^0.453.0",
     "motion": "^10.18.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
     "react": "^18.3.1",
+    "react-app-rewired": "^2.2.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
     "react-scripts": "5.0.1",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
     "typescript": "^5.6.3",
+    "url": "^0.11.4",
     "viem": "2.x",
+    "vm-browserify": "^1.1.2",
     "wagmi": "^2.12.17"
   },
   "scripts": {
-    "start": "react-scripts start --no-source-maps",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start --no-source-maps",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -53,6 +67,8 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "crypto-browserify": "^3.12.1",
+    "os-browserify": "^0.3.0"
   }
 }
