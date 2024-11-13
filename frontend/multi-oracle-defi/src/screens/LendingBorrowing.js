@@ -16,10 +16,15 @@ const LendingBorrowing = () => {
 
   const { lendingContractAddress, CUSDContractAddress } =
     useContractAddresses();
-  const { ethPrice, contractCUSDBalance, contractETHBalance } = useProtocolData(
-    lendingContractAddress,
-    CUSDContractAddress
-  );
+  const {
+    ethPrice,
+    contractCUSDBalance,
+    contractETHBalance,
+    collateralFactor,
+    interestRate,
+    divideFactor,
+  } = useProtocolData(lendingContractAddress, CUSDContractAddress);
+
   const { maxBorrow, userData, userCUSDBalance } = useUserData(
     lendingContractAddress,
     CUSDContractAddress
@@ -72,6 +77,21 @@ const LendingBorrowing = () => {
                   value: contractCUSDBalance
                     ? `${Number(formatEther(contractCUSDBalance))} CUSD`
                     : "Loading...",
+                },
+                {
+                  label: "Collateral Factor",
+                  value: collateralFactor
+                    ? `${Number(collateralFactor)}%`
+                    : "Loading...",
+                },
+                {
+                  label: "Interest Rate",
+                  value:
+                    interestRate && divideFactor
+                      ? `${
+                          Number(interestRate) / Number(divideFactor)
+                        }% per minute`
+                      : "Loading...",
                 },
               ]}
             />
