@@ -33,7 +33,7 @@ export const useContractActions = (
           address: lendingContractAddress,
           abi: LendingBorrowingABI,
           functionName: "repay",
-          args: [parseEther(amount)],
+          args: [amount],
         },
         withdraw: {
           address: lendingContractAddress,
