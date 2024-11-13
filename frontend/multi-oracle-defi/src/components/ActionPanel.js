@@ -38,6 +38,7 @@ export const ActionPanel = ({
   writeTxData,
   isWriteLoading,
   isTxLoading,
+  triggerNotification,
 }) => {
   const renderStatusInfo = () => {
     return (
@@ -103,6 +104,13 @@ export const ActionPanel = ({
                 : "ETH"
             }`
           )}
+        </StyledButton>
+        <StyledButton
+          fullWidth
+          variant="contained"
+          onClick={triggerNotification}
+        >
+          Opt-in for Notifications
         </StyledButton>
 
         {renderStatusInfo()}
