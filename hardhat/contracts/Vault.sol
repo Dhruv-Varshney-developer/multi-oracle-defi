@@ -201,6 +201,7 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
      * https://docs.chain.link/chainlink-automation/guides/forwarder
      */
     function setForwarderAddress(address forwarderAddress) public {
+        require(msg.sender == vaultOwner, "Not Owner");
         require(forwarderAddress != address(0), "Forwarder cannot be zero address");
         require(forwarderAddress != s_forwarderAddress, "Already set to this address");
         

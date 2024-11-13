@@ -6,7 +6,7 @@ const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 module.exports = buildModule("Vault", (m) => {
 
     const vaultContract = m.contract("Vault", [
-        "0x42aFb9D17B29018b6F939A17604dF27Ab56fDC0E",
+        "0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A",
         "100"
     ]);
 
