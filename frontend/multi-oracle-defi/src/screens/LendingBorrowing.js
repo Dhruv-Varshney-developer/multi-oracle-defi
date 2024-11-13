@@ -10,8 +10,7 @@ import { parseEther, formatEther } from "viem";
 import { Box, Typography, Container, Grid } from "@mui/material";
 import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
-import SimpleUSDTokenABI from "../utils/SimpleUSDTokenABI.json";
-
+import CUSDABI from "../utils/CUSDabi.json";
 import { ActionPanel } from "../components/BankComponents";
 import { InfoCard } from "../components/infoCard";
 
@@ -21,8 +20,8 @@ const LendingBorrowing = () => {
   const [amount, setAmount] = useState("");
 
   // Contract addresses
-  const lendingContractAddress = "0xE18C1Bc5316e8590A93fC9dD8A338A0019068075";
-  const CUSDContractAddress = "0xdCe92E3F9Bd38776cfaEF9d7B6fA551f274D9323";
+  const lendingContractAddress = "0x1e88e0dc3924D9869A1Ed7d86197341dd459CF48";
+  const CUSDContractAddress = "0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A";
 
   // Contract reads
   const { data: ethPrice } = useReadContract({
@@ -47,14 +46,14 @@ const LendingBorrowing = () => {
 
   const { data: contractCUSDBalance } = useReadContract({
     address: CUSDContractAddress,
-    abi: SimpleUSDTokenABI,
+    abi: CUSDABI,
     functionName: "balanceOf",
     args: [lendingContractAddress],
   });
 
   const { data: userCUSDBalance } = useReadContract({
     address: CUSDContractAddress,
-    abi: SimpleUSDTokenABI,
+    abi: CUSDABI,
     functionName: "balanceOf",
     args: [address],
   });
@@ -128,7 +127,7 @@ const LendingBorrowing = () => {
     try {
       await writeContract({
         address: CUSDContractAddress,
-        abi: SimpleUSDTokenABI,
+        abi: CUSDABI,
         functionName: "approve",
         args: [lendingContractAddress, 1000000],
       });
