@@ -133,7 +133,7 @@ const LendingBorrowing = () => {
                 {
                   label: "Repayment Amount",
                   value: repaymentAmount
-                    ? `${Number(formatEther(repaymentAmount))} CUSD`
+                    ? `${Number(repaymentAmount)} CUSD`
                     : "0 CUSD",
                 },
                 {

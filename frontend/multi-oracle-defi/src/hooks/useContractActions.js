@@ -27,7 +27,7 @@ export const useContractActions = (
           address: lendingContractAddress,
           abi: LendingBorrowingABI,
           functionName: "borrow",
-          args: [parseEther(amount)],
+          args: [amount],
         },
         repay: {
           address: lendingContractAddress,
