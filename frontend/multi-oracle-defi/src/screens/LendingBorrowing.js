@@ -41,16 +41,16 @@ const LendingBorrowing = () => {
   } = useContractActions(lendingContractAddress, CUSDContractAddress);
 
   const {
+    isSubscribed,
+    isLoadingNotif,
     notificationTitle,
     notificationBody,
-    notificationCta,
-    notificationImage,
     notificationApp,
     notificationIcon,
-    notificationUrl,
-    notificationBlockchain,
+
     isNotificationOpen,
-    triggerNotification,
+    optInToNotifications,
+    optOutOfNotifications,
     handleNotificationClose,
   } = useNotifications();
 
@@ -126,7 +126,10 @@ const LendingBorrowing = () => {
               writeTxData={writeTxData}
               isWriteLoading={isWriteLoading}
               isTxLoading={isTxLoading}
-              triggerNotification={triggerNotification}
+              isSubscribed={isSubscribed}
+              optInToNotifications={optInToNotifications}
+              optOutOfNotifications={optOutOfNotifications}
+              isLoadingNotif={isLoadingNotif}
             />
           </Grid>
 
@@ -167,12 +170,8 @@ const LendingBorrowing = () => {
         isNotificationOpen={isNotificationOpen}
         notificationTitle={notificationTitle}
         notificationBody={notificationBody}
-        notificationCta={notificationCta}
-        notificationImage={notificationImage}
         notificationApp={notificationApp}
         notificationIcon={notificationIcon}
-        notificationUrl={notificationUrl}
-        notificationBlockchain={notificationBlockchain}
         handleNotificationClose={handleNotificationClose}
       />
     </Box>

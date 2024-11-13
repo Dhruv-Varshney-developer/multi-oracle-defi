@@ -5,50 +5,107 @@ import { useEthersProvider } from "../utils/ethersAdapter";
 const useNotifications = () => {
   const provider = useEthersProvider();
 
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [notificationTitle, setNotificationTitle] = useState("");
   const [notificationBody, setNotificationBody] = useState("");
-  const [notificationCta, setNotificationCta] = useState("");
-  const [notificationImage, setNotificationImage] = useState("");
   const [notificationApp, setNotificationApp] = useState("");
   const [notificationIcon, setNotificationIcon] = useState("");
-  const [notificationUrl, setNotificationUrl] = useState("");
-  const [notificationBlockchain, setNotificationBlockchain] = useState("");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-  const triggerNotification = async () => {
+  const CHANNEL_ADDRESS = "0xE88af5450ff138aa93321aB155E2027411C20Fad";
+
+  // Function to check if user is subscribed to the channel
+  const checkSubscription = async () => {
     try {
-      // Initialize user for Push Protocol
       const userAlice = await PushAPI.initialize(provider, {
         env: CONSTANTS.ENV.STAGING,
       });
 
-      // Establish connection to stream
+      const subscriptions = await userAlice.notification.subscriptions();
+      const isUserSubscribed = subscriptions.some(
+        (subscription) =>
+          subscription.channel.toLowerCase() === CHANNEL_ADDRESS.toLowerCase()
+      );
+
+      setIsSubscribed(isUserSubscribed);
+      return isUserSubscribed;
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+      return false;
+    }
+  };
+
+  // Function to opt-in to notifications
+  const optInToNotifications = async () => {
+    try {
+      setIsLoading(true);
+
+      const userAlice = await PushAPI.initialize(provider, {
+        env: CONSTANTS.ENV.STAGING,
+      });
+
+      await userAlice.notification.subscribe(
+        `eip155:11155111:${CHANNEL_ADDRESS}` // Replace 11155111 with your chain ID
+      );
+
+      setIsSubscribed(true);
+
+      // After successful subscription, initialize the notification stream
+      await initializeNotificationStream(userAlice);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error opting in to notifications:", error);
+      setIsLoading(false);
+    }
+  };
+
+  // Function to opt-out of notifications
+  const optOutOfNotifications = async () => {
+    try {
+      setIsLoading(true);
+
+      const userAlice = await PushAPI.initialize(provider, {
+        env: CONSTANTS.ENV.STAGING,
+      });
+
+      // Unsubscribe from the channel
+      await userAlice.notification.unsubscribe(
+        `eip155:11155111:${CHANNEL_ADDRESS}`
+      );
+
+      setIsSubscribed(false);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error opting out of notifications:", error);
+      setIsLoading(false);
+    }
+  };
+
+  // Initialize notification stream
+  const initializeNotificationStream = async (userAlice) => {
+    try {
       const stream = await userAlice.initStream([
         CONSTANTS.STREAM.CONNECT,
         CONSTANTS.STREAM.NOTIF,
       ]);
 
-      // Listen for notifications
       stream.on(CONSTANTS.STREAM.NOTIF, (item) => {
         setNotificationTitle(item.message.payload.title);
         setNotificationBody(item.message.payload.body);
-        setNotificationCta(item.message.payload.cta);
-        setNotificationImage(item.message.payload.embed);
         setNotificationApp(item.channel.name);
         setNotificationIcon(item.channel.icon);
-        setNotificationUrl(item.channel.url);
-        setNotificationBlockchain(item.source);
         setIsNotificationOpen(true);
 
         // Play a notification sound
-        const audio = new Audio("/notification-sound.mp3");
+        const audio = new Audio("/notification.mp3");
         audio.play();
       });
 
-      // Connect stream
       stream.connect();
     } catch (error) {
-      console.error("Error triggering notification:", error);
+      console.error("Error initializing notification stream:", error);
     }
   };
 
@@ -57,16 +114,16 @@ const useNotifications = () => {
   };
 
   return {
+    isSubscribed,
+    isLoadingNotif: isLoading,
     notificationTitle,
     notificationBody,
-    notificationCta,
-    notificationImage,
     notificationApp,
     notificationIcon,
-    notificationUrl,
-    notificationBlockchain,
+
     isNotificationOpen,
-    triggerNotification,
+    optInToNotifications,
+    optOutOfNotifications,
     handleNotificationClose,
   };
 };
