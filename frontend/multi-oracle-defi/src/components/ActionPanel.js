@@ -91,6 +91,7 @@ export const ActionPanel = ({
           fullWidth
           variant="contained"
           onClick={() => handleAction(activeTab)}
+          sx={{ mb: 2 }}
           disabled={isWriteLoading || isTxLoading}
         >
           {isWriteLoading || isTxLoading ? (

@@ -9,6 +9,8 @@ import { useContractAddresses } from "../hooks/useContractAddresses";
 import { useProtocolData } from "../hooks/useProtocolData";
 import { useUserData } from "../hooks/useUserData";
 import { useContractActions } from "../hooks/useContractActions";
+import useNotifications from "../hooks/useNotifications";
+import NotificationPanel from "../components/NotificationPanel";
 
 const LendingBorrowing = () => {
   const [activeTab, setActiveTab] = useState("deposit");
@@ -37,6 +39,20 @@ const LendingBorrowing = () => {
     isTxLoading,
     error,
   } = useContractActions(lendingContractAddress, CUSDContractAddress);
+
+  const {
+    notificationTitle,
+    notificationBody,
+    notificationCta,
+    notificationImage,
+    notificationApp,
+    notificationIcon,
+    notificationUrl,
+    notificationBlockchain,
+    isNotificationOpen,
+    triggerNotification,
+    handleNotificationClose,
+  } = useNotifications();
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -110,6 +126,7 @@ const LendingBorrowing = () => {
               writeTxData={writeTxData}
               isWriteLoading={isWriteLoading}
               isTxLoading={isTxLoading}
+              triggerNotification={triggerNotification}
             />
           </Grid>
 
@@ -138,15 +155,26 @@ const LendingBorrowing = () => {
                 },
                 {
                   label: "Max Borrowable CUSD",
-                  value: maxBorrow
-                    ? `${Number(maxBorrow)} CUSD`
-                    : "Fetching data...",
+                  value: maxBorrow ? `${Number(maxBorrow)} CUSD` : "0 CUSD",
                 },
               ]}
             />
           </Grid>
         </Grid>
       </Container>
+
+      <NotificationPanel
+        isNotificationOpen={isNotificationOpen}
+        notificationTitle={notificationTitle}
+        notificationBody={notificationBody}
+        notificationCta={notificationCta}
+        notificationImage={notificationImage}
+        notificationApp={notificationApp}
+        notificationIcon={notificationIcon}
+        notificationUrl={notificationUrl}
+        notificationBlockchain={notificationBlockchain}
+        handleNotificationClose={handleNotificationClose}
+      />
     </Box>
   );
 };
