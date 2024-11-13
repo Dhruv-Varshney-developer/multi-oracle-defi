@@ -70,13 +70,13 @@ const LendingBorrowing = () => {
                   label: "Protocol ETH Balance",
                   value: contractETHBalance
                     ? `${Number(formatEther(contractETHBalance.value))} ETH`
-                    : "Loading...",
+                    : "0 ETH",
                 },
                 {
                   label: "Protocol CUSD Balance",
                   value: contractCUSDBalance
                     ? `${Number(formatEther(contractCUSDBalance))} CUSD`
-                    : "Loading...",
+                    : "0 CUSD",
                 },
                 {
                   label: "Collateral Factor",
