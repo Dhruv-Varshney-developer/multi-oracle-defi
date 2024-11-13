@@ -11,7 +11,7 @@ import { Box, Typography, Container, Grid } from "@mui/material";
 import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
 import CUSDABI from "../utils/CUSDabi.json";
-import { ActionPanel } from "../components/BankComponents";
+import { ActionPanel } from "../components/ActionPanel";
 import { InfoCard } from "../components/infoCard";
 
 const LendingBorrowing = () => {
