@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
 import {
   Container,
   Box,
   Typography,
   CardContent,
   CardMedia,
-  CircularProgress,
   Snackbar,
   Alert,
   Button as MuiButton,
@@ -14,32 +13,57 @@ import {
   IconButton
 } from "@mui/material";
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
+import { motion } from 'framer-motion';
 import { styled } from "@mui/material/styles";
+import CUSDABI from "../utils/SimpleUSDTokenABI.json";
 import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json"; 
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
-//import spinWheelTex from '../assets/wheel.svg';
-import WheelComponent from 'react-wheel-of-prizes';
+import { ethers } from "ethers";
+import SimpleWheel from '../components/SimpleWheel';
 
-
+const cUSDAddress = '0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A';
 const contractAddress = '0xE02305bEe7eec39b831e60b9976bcd63Fc45d1Ec';
 
 const NFT = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [wheelEnabled, setWheelEnabled] = useState(false);
+  const [wheelEnabled, setWheelEnabled] = useState(true);
+  const [isMinting, setIsMinting] = useState(false);
+  const [showNFTCard, setShowNFTCard] = useState(false); 
   const [lastMintTimestamp, setLastMintTimestamp] = useState(null);  // Timestamp control
-  const [tokenId, setTokenId] = useState('');
   const [requestId, setRequestId] = useState(null);
   const [nftBalance, setNftBalance] = useState(null);
   const [mintedNFT, setMintedNFT] = useState(null);
   const [openAlert, setOpenAlert] = useState(false);
-  const [progressMessage, setProgressMessage] = useState(null); // Progress message state
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
 
   const connectedAccount = useAccount();
 
+  //------------------------------------------------------------------------------------------
+  // Approve transfer cUSD before minting NFT
+  const { writeContract: writeCUSD } = useWriteContract();
+  // Function to approve the cUSD token transfer
+  const approveCUSD = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    try {
+      await writeCUSD({
+        address: cUSDAddress,
+        abi: CUSDABI,
+        functionName: 'approve',
+        args: [contractAddress, ethers.utils.parseUnits("0.01", 18)],
+      });
+      setWheelEnabled(true);
+      setShowNFTCard(false);
+    } catch (error) {
+      console.error("Approval error:", error);
+    }
+    setLoading(false);
+  };
+
   // ------------------------------------------------------------------------------------------
-  // Check if a day has passed since the last mint
+  // Check if a day has passed since the last mint (5 min)
   useEffect(() => {
     const now = Date.now();
     if (lastMintTimestamp && now - lastMintTimestamp < 5* 60 * 1000) {
@@ -89,6 +113,7 @@ const NFT = () => {
           name: nftName,
           image: nftImage,
         });
+        setShowNFTCard(true);
       }
     } catch (error) {
       console.error("Error fetching NFT details:", error);
@@ -109,12 +134,111 @@ const NFT = () => {
   };
 
   // Check NFT Balance on load
-  useEffect(() => {
+  /*useEffect(() => {
     checkNftBalance();
-  }, [connectedAccount]);
- //------------------------------------------------------------------------------------------
+  }, [connectedAccount]);*/
+
+  //------------------------------------------------------------------------------------------
   // Handle the request for random words and mintNFT 
   const { writeContract } = useWriteContract();
+
+  //------------------------------------------------------------------------------------------
+  // Spin wheel for requestrandomwords and mintNFT 
+  const spinWheel = async () => {
+    if (loading || !wheelEnabled) return;
+
+    setLoading(true);
+    setIsMinting(true);
+
+    const now = Date.now(); // Set timestamp
+    const balance = await refetchBalance();
+    const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
+    console.log("Nft balance: ", nftCount);
+    if (lastMintTimestamp && now - lastMintTimestamp < 5 * 60 * 1000) {
+      setOpenAlert(true);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Poll for requestId change (up to 100 seconds)
+      let initialRequestId, currentRequestId = requestId;
+      let elapsedTime = 0;
+      const pollInterval = 1000; // 10 seconds
+      let requestIdUpdated = false;
+      let tokenMinted = false;
+
+      // Request VRF for random words
+      await writeContract({
+        address: contractAddress,
+        abi: NFTMintingWithVRFABI,
+        functionName: 'requestRandomWords',
+      });
+
+      //Wait to get requestId back
+      while (elapsedTime < 1000000 && !requestIdUpdated) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        elapsedTime += pollInterval;
+
+        const result = await refetchRequestId();
+        currentRequestId = result?.data ? result.data.toString() : initialRequestId;
+
+        if (currentRequestId !== initialRequestId) {
+          setRequestId(currentRequestId); // Update the requestId state
+          console.log("requestId: ", currentRequestId);
+          requestIdUpdated = true;
+          break;
+        }
+      }
+
+      if (!requestIdUpdated) {
+        throw new Error("Request timed out. No new requestId received.");
+      } else {
+        // Proceed to mint the NFT with the new requestId
+
+        await writeContract({
+          address: contractAddress,
+          abi: NFTMintingWithVRFABI,
+          functionName: 'mintNFT',
+          args: [currentRequestId], 
+        });
+        console.log("mintNFT requested");
+
+        //Wait to get new NFT minted 
+        elapsedTime = 0;
+        while (elapsedTime < 1000000 && !tokenMinted) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          elapsedTime += pollInterval;
+
+          let currentBalance = await refetchBalance();
+          let currentNftCount = currentBalance?.data?.toNumber ? currentBalance.data.toNumber() : parseInt(currentBalance.data);    
+          if (currentNftCount > nftCount) {
+            tokenMinted = true;
+            setCurrentNFTIndex(currentNftCount - 1);
+            await viewNFTById(currentNftCount - 1);
+
+            // Once minting is complete, reset isMinting to stop the wheel
+            setIsMinting(false); 
+            setWheelEnabled(false); 
+            break;
+          }
+        }
+
+        if (!tokenMinted) {
+          throw new Error("Minting timeout: No new tokenId received.");
+        }
+        setLastMintTimestamp(now); // Update timestamp
+      }
+
+    } catch (error) {
+      console.error("Minting error:", error);
+      setIsMinting(false);
+      setStatus("Error occurred during minting.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   //------------------------------------------------------------------------------------------
   // Read the requestId 
@@ -125,42 +249,28 @@ const NFT = () => {
     enabled: false,
   });
 
-  // ------------------------------------------------------------------------------------------
-  // Check if a day has passed since the last mint
-  useEffect(() => {
-    const now = Date.now();
-    if (lastMintTimestamp && now - lastMintTimestamp < 5 * 60 * 1000) {
-      setOpenAlert(true);
-    }
-  }, [lastMintTimestamp]);
-   
   //--------------------------------------------------------------------------------
   //Styled Components
-  const segments = ['Extra 1%', 'Extra 2%', 'Diamond Heart', 'Mystic Star'];
-  const segColors = ['#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A'];
+  const segments = [        
+    'Golden Heart',
+    'Lucky Stars',
+    'Diamond Heart',
+    'Golden Moon',
+    'Glowing Moon',
+    'Shiny Fortune',
+    'Lightning Luck',
+    'Emerald Heart',
+    'Star Streak',
+    'Star Burst'];
 
-  const StyledWheelContainer = styled(Box)({
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: '2rem',
-    width: '100%',
-  });
-
-  const StyledCardContainer = styled(Box)({
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: '2rem', // space between the cards
-    flexWrap: 'wrap',
-  });
+  const segColors = ['#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A', '#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A', '#5C6BC0', '#42A5F5'];
 
   const StyledCard = styled(Card)(({ theme }) => ({
-    background: "rgba(0, 0, 0, 0.6)",
+    background: "rgba(0, 0, 0, 0.1)",
     backdropFilter: "blur(10px)",
     border: "1px solid rgba(255, 255, 255, 0.1)",
     borderRadius: theme.spacing(2),
-    padding: theme.spacing(2),
+    padding: "2px",
     position: 'relative', 
     display: 'flex',
     flexDirection: 'column',
@@ -170,50 +280,13 @@ const NFT = () => {
     height: '400px',
   }));
 
-  const StyledButton = styled(MuiButton)(({ theme }) => ({
-    width: "80px",
-    height: "80px",
-    borderRadius: 50,
-    padding: theme.spacing(1),
-    textTransform: "none",
-    fontWeight: 600,
-    background: "rgba(255, 255, 255, 1)",
-    "&:hover": {
-      background: "rgba(10, 10, 50, 1)",
-    },
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)', // Center button within the spinning wheel
-    zIndex: 2,
-  }));
-
   const StyledAlert = styled(Alert)(({ theme }) => ({
     backdropFilter: "blur(10px)",
     background: "rgba(0, 0, 0, 0.4)",
     color: "white",
   }));
 
-/*  const SpinWheel = styled(Box)(({ spinning }) => ({
-    width: '400px',
-    height: '400px',
-    borderRadius: '50%',
-    backgroundImage: `url(${spinWheelTex})`,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: 'white',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    animation: spinning === 'true' ? 'spin 2s linear infinite' : 'none',
-    '@keyframes spin': {
-      '0%': { transform: 'rotate(0deg)' },
-      '100%': { transform: 'rotate(360deg)' },
-    },
-    zIndex: 1,
-  }));*/
-
-   // InfoCard component to display NFT info with image
+  // InfoCard component to display NFT info with image
    const InfoCard = ({ name, reward, image }) => (
     <StyledCard>
       <CardContent>
@@ -263,168 +336,66 @@ const NFT = () => {
   //--------------------------------------------------------------------------------
   //Frontend Components 
   return (
-    <Container sx={{ padding: "2rem", textAlign: 'center', background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", height: "100vh" }}>
-      <Typography variant="h4" component="h1" sx={{ marginBottom: "2rem", color: "white" }}>
-      Spin the wheel to mint a unique Capstone Labs NFT with extra rewards! Pay with CUSD to spin.
+    <Container sx={{ padding: "2rem", textAlign: 'center', height: "80vh", width:"80vh" }}>
+      <Typography variant="h4" component="h1" sx={{ marginBottom: "2rem", color: "white",}}>
+      PAY 10 CUSD TO MINT A UNIQUE CAPSTONE LABS REWARD WITH EXTRA REWARDS!
       </Typography>
 
-      <StyledCardContainer>
-        <StyledButton onClick={async () => {
-              if (loading) return;           
-              const now = Date.now(); // Set timestamp
-              const balance = await refetchBalance();
-              const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);    
-              console.log("Nft balance: ", nftCount);
-              if (lastMintTimestamp && now - lastMintTimestamp < 5 * 60 * 1000) {
-                setOpenAlert(true);
-                return;
-              }
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }} 
+        transition={{ duration: 0.2 }}
+        style={{
+          display: 'inline-block',
+          marginLeft: "200px"
+        }}
+      >
+        <MuiButton
+          onClick={approveCUSD}
+          disabled={loading}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded mb-4"
+          sx={{ padding: "1rem", left:'22.5%', textAlign: 'center', background:"rgba(255, 255, 255, 0.1)", transform: "translateX(-50%)",
+            "&:hover": {
+            background: '#42A5F5',
+            }, 
+          }}
+        >
+          {loading ? 'Pay 10 CUSD for minting CapstoneLabs NFT': 'Pay 10 CUSD for minting CapstoneLabs NFT'}
+        </MuiButton>
+      </motion.div>
 
-              /*setSpinning(true); // Start spinning animation*/
-              setLoading(true); // Keep spinning while requestVRF+minting
-              setProgressMessage("Requesting Random Number");
+      <Box display="flex" flexDirection="column" alignItems="center" className="mt-8" sx={{ padding:"1.5rem", minHeight: "300px" }}>
+        {wheelEnabled && !showNFTCard &&(
+            <SimpleWheel
+              segments={segments}
+              segColors={segColors}
+              onFinished={spinWheel}
+              wheelEnabled={wheelEnabled}
+              isMinting={isMinting} 
+            />
+        )}
 
-              try {
-                // Poll for requestId change (up to 100 seconds)
-                let initialRequestId, currentRequestId = requestId;
-                let elapsedTime = 0;
-                const pollInterval = 1000; // 10 seconds
-                let requestIdUpdated = false;
-                let tokenMinted = false;
-
-                // Request VRF for random words
-                await writeContract({
-                  address: contractAddress,
-                  abi: NFTMintingWithVRFABI,
-                  functionName: 'requestRandomWords',
-                });
-
-                //Wait to get requestId back
-                while (elapsedTime < 1000000 && !requestIdUpdated) {
-                  
-                  await new Promise(resolve => setTimeout(resolve, pollInterval));
-                  elapsedTime += pollInterval;
-
-                  const result = await refetchRequestId();
-                  currentRequestId = result?.data ? result.data.toString() : initialRequestId;
-
-                  if (currentRequestId !== initialRequestId) {
-                    setRequestId(currentRequestId); // Update the requestId state
-                    console.log("requestId: ", currentRequestId);
-                    requestIdUpdated = true;
-                    break;
-                  }
-                }
-
-                if (!requestIdUpdated) {
-                  throw new Error("Request timed out. No new requestId received.");
-                }else{
-
-                // Proceed to mint the NFT with the new requestId
-                setProgressMessage("Minting NFT");
-                await writeContract({
-                  address: contractAddress,
-                  abi: NFTMintingWithVRFABI,
-                  functionName: 'mintNFT',
-                  args: [currentRequestId], 
-                });
-                console.log("mintNFT requested");
-
-                //Wait to get new NFT minted 
-                elapsedTime = 0;
-                while (elapsedTime < 1000000 && !tokenMinted) {
-                  await new Promise(resolve => setTimeout(resolve, pollInterval));
-                  elapsedTime += pollInterval;
-
-                  let currentBalance = await refetchBalance();
-                  let currentNftCount = currentBalance?.data?.toNumber ? currentBalance.data.toNumber() : parseInt(currentBalance.data);    
-                  if (currentNftCount > nftCount) {
-                    tokenMinted=true;
-                    setCurrentNFTIndex(currentNftCount - 1);
-                    await viewNFTById(currentNftCount - 1);
-                    break;
-                  }
-                }
-            
-                if (!tokenMinted) {
-                  throw new Error("Minting timeout: No new tokenId received.");
-                }
-                setProgressMessage(null); 
-                setLastMintTimestamp(now); // Update timestamp
-              }
-
-              } catch (error) {
-                console.error("Minting error:", error);
-                setStatus("Error occurred during minting.");
-                setProgressMessage(null);
-              } finally {
-                setLoading(false);
-                //setSpinning(false);
-              }
-            }
-          } disabled={loading}>
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Pay 10 cUSD to Mint'}
-        </StyledButton>
-
-        {wheelEnabled && (
-        <StyledWheelContainer>
-          <WheelComponent
-            segments={segments}
-            segColors={segColors}
-            primaryColor="blue"
-            contrastColor="white"
-            buttonText="Spin"
-            isOnlyOnce={false}
-            size={250}
-            upDuration={100}
-            downDuration={500}
-            fontFamily="Arial"
-          />
-        </StyledWheelContainer>
-      )}
-
-
-      {mintedNFT ? (
-          <InfoCard
+      {showNFTCard && mintedNFT && (
+        <div className="nftCard">
+          <InfoCard sx={{ padding: "1rem"}}
             name={mintedNFT.name}
             reward={mintedNFT.reward/10}
             image={mintedNFT.image}
           />
-        ) : (
-          <StyledCard>
-            <CardContent>
-            <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  background: "rgba(255, 255, 255, 0.05)",
-                  borderRadius: 2,
-                  transition: "0.3s",
-                  "&:hover": {
-                    background: "rgba(255, 255, 255, 0.1)",
-                  },
-                }}
-              >
-              <Typography variant="body1" color="white" align="center">
-              {progressMessage || "Spin the wheel to mint your daily Capstone Labs NFT and get extra rewards!!!"} 
-              </Typography>
-            </Paper>
-          </CardContent>
-          </StyledCard>
-        )}
-      </StyledCardContainer>
 
-      {/* Navigation Buttons */}
-      <Box display="flex" justifyContent="right" alignItems="center" mt={2} marginRight={25}>
-        <IconButton onClick={() => navigateNFT('previous')} disabled={currentNFTIndex <= 0}>
-          <ArrowBack color="inherit" />
-        </IconButton>
-        <Typography variant="body2" color="white" mx={2}>
-          Viewing NFT {currentNFTIndex + 1} of {nftBalance}
-        </Typography>
-        <IconButton onClick={() => navigateNFT('next')} disabled={currentNFTIndex >= nftBalance - 1}>
-          <ArrowForward color="inherit" />
-        </IconButton>
+          <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+          <IconButton onClick={() => navigateNFT('previous')} disabled={currentNFTIndex <= 0}>
+            <ArrowBack color="inherit" />
+          </IconButton>
+          <Typography variant="body2" color="white" mx={2}>
+            Viewing NFT {currentNFTIndex + 1} of {nftBalance}
+          </Typography>
+          <IconButton onClick={() => navigateNFT('next')} disabled={currentNFTIndex >= nftBalance - 1}>
+            <ArrowForward color="inherit" />
+          </IconButton>
+        </Box>
+        </div>
+        )}
       </Box>
 
       <Snackbar

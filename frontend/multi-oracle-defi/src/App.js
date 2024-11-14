@@ -4,7 +4,7 @@ import { ConnectKitButton } from "connectkit";
 import { useAccount } from "wagmi";
 import LendingBorrowing from "./screens/LendingBorrowing";
 import PriceFeed from "./screens/PriceFeed";
-import NFT from "./screens/nft";
+import NFT from "./screens/CapstoneLabsNFT";
 import CLogo from "./assets/CLogo.png";
 
 const App = () => {
