@@ -41,31 +41,24 @@ const CloseButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
-const NotificationPanel = ({
-  isNotificationOpen,
-  notificationTitle,
-  notificationBody,
-  notificationApp,
-  notificationIcon,
-  handleNotificationClose,
-}) => {
+const NotificationPanel = ({ isOpen, title, body, app, icon, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (isNotificationOpen) {
+    if (isOpen) {
       setIsVisible(true);
-      const audio = new Audio("/notification-sound.mp3");
+      const audio = new Audio("/notification.mp3");
       audio.volume = 0.5;
       audio.play().catch((error) => console.log("Audio play failed:", error));
 
       const timer = setTimeout(() => {
         setIsVisible(false);
-        handleNotificationClose();
+        onClose();
       }, 5000);
 
       return () => clearTimeout(timer);
     }
-  }, [isNotificationOpen, handleNotificationClose]);
+  }, [isOpen, onClose]);
 
   return (
     <Fade
@@ -86,24 +79,20 @@ const NotificationPanel = ({
         }}
       >
         <StyledNotificationCard>
-          <CloseButton onClick={handleNotificationClose}>
+          <CloseButton onClick={onClose}>
             <CloseIcon fontSize="small" />
           </CloseButton>
 
           <NotificationHeader>
-            {notificationIcon && (
-              <Avatar
-                src={notificationIcon}
-                alt={notificationApp}
-                sx={{ width: 24, height: 24 }}
-              />
+            {icon && (
+              <Avatar src={icon} alt={app} sx={{ width: 24, height: 24 }} />
             )}
-            {notificationApp && (
+            {app && (
               <Typography
                 variant="subtitle2"
                 sx={{ color: "white", fontWeight: 600 }}
               >
-                {notificationApp}
+                {app}
               </Typography>
             )}
           </NotificationHeader>
@@ -118,7 +107,7 @@ const NotificationPanel = ({
                 color: "white",
               }}
             >
-              {notificationTitle}
+              {title}
             </Typography>
             <Typography
               variant="body2"
@@ -128,7 +117,7 @@ const NotificationPanel = ({
                 color: "white",
               }}
             >
-              {notificationBody}
+              {body}
             </Typography>
           </NotificationContent>
         </StyledNotificationCard>

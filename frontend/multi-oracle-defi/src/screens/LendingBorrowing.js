@@ -9,7 +9,8 @@ import { useContractAddresses } from "../hooks/useContractAddresses";
 import { useProtocolData } from "../hooks/useProtocolData";
 import { useUserData } from "../hooks/useUserData";
 import { useContractActions } from "../hooks/useContractActions";
-import useNotifications from "../hooks/useNotifications";
+import { useChannelSubscription } from "../hooks/useChannelSubscription";
+import { useNotificationStream } from "../hooks/useNotificationStream";
 import NotificationPanel from "../components/NotificationPanel";
 
 const LendingBorrowing = () => {
@@ -40,19 +41,18 @@ const LendingBorrowing = () => {
     error,
   } = useContractActions(lendingContractAddress, CUSDContractAddress);
 
-  const {
-    isSubscribed,
-    isLoadingNotif,
-    notificationTitle,
-    notificationBody,
-    notificationApp,
-    notificationIcon,
+  const { isSubscribed, subscribe, unsubscribe } = useChannelSubscription();
+  const { notificationState, initializeStream, closeNotification } =
+    useNotificationStream();
 
-    isNotificationOpen,
-    optInToNotifications,
-    optOutOfNotifications,
-    handleNotificationClose,
-  } = useNotifications();
+  const handleOptIn = async () => {
+    try {
+      await subscribe();
+      await initializeStream();
+    } catch (error) {
+      console.error("Error during opt-in:", error);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -127,9 +127,8 @@ const LendingBorrowing = () => {
               isWriteLoading={isWriteLoading}
               isTxLoading={isTxLoading}
               isSubscribed={isSubscribed}
-              optInToNotifications={optInToNotifications}
-              optOutOfNotifications={optOutOfNotifications}
-              isLoadingNotif={isLoadingNotif}
+              optInToNotifications={handleOptIn}
+              optOutOfNotifications={unsubscribe}
             />
           </Grid>
 
@@ -167,12 +166,12 @@ const LendingBorrowing = () => {
       </Container>
 
       <NotificationPanel
-        isNotificationOpen={isNotificationOpen}
-        notificationTitle={notificationTitle}
-        notificationBody={notificationBody}
-        notificationApp={notificationApp}
-        notificationIcon={notificationIcon}
-        handleNotificationClose={handleNotificationClose}
+        isOpen={notificationState.isOpen}
+        title={notificationState.title}
+        body={notificationState.body}
+        app={notificationState.app}
+        icon={notificationState.icon}
+        onClose={closeNotification}
       />
     </Box>
   );

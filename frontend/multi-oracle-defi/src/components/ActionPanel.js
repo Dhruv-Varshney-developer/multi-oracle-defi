@@ -41,7 +41,6 @@ export const ActionPanel = ({
   isSubscribed,
   optInToNotifications,
   optOutOfNotifications,
-  isLoadingNotif,
 }) => {
   const renderStatusInfo = () => {
     return (
@@ -113,11 +112,8 @@ export const ActionPanel = ({
           fullWidth
           variant="contained"
           onClick={isSubscribed ? optOutOfNotifications : optInToNotifications}
-          disabled={isLoading}
         >
-          {isLoadingNotif
-            ? "Processing..."
-            : isSubscribed
+          {isSubscribed
             ? "Opt-out of Notifications"
             : "Opt-in for Notifications"}
         </StyledButton>
