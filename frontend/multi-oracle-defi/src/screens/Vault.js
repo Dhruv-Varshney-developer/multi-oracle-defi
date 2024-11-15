@@ -29,7 +29,7 @@ const Vault = () => {
 
   //---------------------------------------------------------------------------------------
   //Contract Addresses
-  const VaultContractAddress = "0x5EE320d77B1C5d5807c9e72C36210D4D3066aE54";
+  const VaultContractAddress = "0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5";
   const CUSDContractAddress = "0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A";
   const forwarderAddress = "0x86048a5FEb6DCC60c487667BD93955A6E6916d36";
 
@@ -92,7 +92,7 @@ const Vault = () => {
   });
 
   const handleCopy = () => {
-    const textToCopy = "0x5EE320d77B1C5d5807c9e72C36210D4D3066aE54";
+    const textToCopy = "0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5";
     navigator.clipboard.writeText(textToCopy).then(() => {
       setOpen(true);
     });
@@ -129,29 +129,28 @@ const Vault = () => {
           }
           break;
         case "gains":
-          await writeContract({
-            address: VaultContractAddress,
-            abi: VaultABI,
-            functionName: "setGains",
-            args: [amount],
-          });
-          setShowAlert(false);
-          
-          break;
-        case "yields":
           if (formatEther(allowanceVCUSD) === 0 || formatEther(allowanceVCUSD) < amount) {
             // Trigger the alert
-            setAlertMessage("You need to approve your shares for vCUSD");
+            setAlertMessage("You need to approve your shares for vCUSD, to enable automatic withdrawal");
             setShowAlert(true);
           } else {
             await writeContract({
               address: VaultContractAddress,
               abi: VaultABI,
-              functionName: "IncreaseYield",
-              args: [parseEther(amount)],
+              functionName: "setGains",
+              args: [amount],
             });
             setShowAlert(false);
-            }
+          }
+          break;
+        case "buy":
+          await writeContract({
+            address: CUSDContractAddress,
+            abi: SimpleUSDTokenABI,
+            functionName: "buy",
+            value: parseEther(amount),
+          });
+          setShowAlert(false);
           break;
         default:
           if (formatEther(allowanceCUSD) === 0 || formatEther(allowanceCUSD) < amount) {
@@ -176,8 +175,7 @@ const Vault = () => {
   };
 
   const handleApprove = async () => {
-    if(activeTab==='yields'){
-      console.log(amount);
+    if(activeTab==='gains'){
       try {
         await writeContract({
           address: VaultContractAddress,
@@ -223,7 +221,7 @@ const Vault = () => {
           color="rgba(255, 255, 255, 0.7)"
           style={{ cursor: 'pointer' }}
           onClick={handleCopy}>
-            0x5EE320d77B1C5d5807c9e72C36210D4D3066aE54
+            0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5
           </Typography>
           <Snackbar
           open={open}

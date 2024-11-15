@@ -191,6 +191,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "OnlyNFTCaller",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -306,6 +311,25 @@
       }
     ],
     "name": "InitialDepositUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newAddress",
+        "type": "address"
+      }
+    ],
+    "name": "NFTAddressUpdated",
     "type": "event"
   },
   {
@@ -571,6 +595,30 @@
       }
     ],
     "name": "deposit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      }
+    ],
+    "name": "depositRewards",
     "outputs": [
       {
         "internalType": "uint256",
@@ -885,6 +933,19 @@
       }
     ],
     "name": "setGains",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nftAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setNFTAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

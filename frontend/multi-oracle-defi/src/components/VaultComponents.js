@@ -18,6 +18,7 @@ import {
   AttachMoney,
   PercentOutlined,
   OutlinedFlagRounded,
+  ShoppingCart,
 } from "@mui/icons-material";
 import React from "react";
 
@@ -116,10 +117,12 @@ export const ActionPanel = ({
         <StyledTextField
           fullWidth
           label={`Amount (${
-            activeTab === "redeem" || activeTab === "yields"
+            activeTab === "redeem"
             ? "vCUSD"
             : activeTab === "gains"
-            ? "%"
+            ? "vCUSD / %"
+            :  activeTab === "buy"
+            ? "ETH"
             : "CUSD"
           })`}
           value={amount}
@@ -128,7 +131,7 @@ export const ActionPanel = ({
           variant="outlined"
           sx={{ mb: 2 }}
         />
-        {activeTab === "yields" && (
+        {activeTab === "gains" && (
           <StyledButton
             fullWidth
             variant="outlined"
@@ -168,10 +171,12 @@ export const ActionPanel = ({
             <CircularProgress size={24} color="inherit" />
           ) : (
             `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ${
-                activeTab === "redeem" || activeTab === "yields"
+                activeTab === "redeem"
                 ? "vCUSD"
                 : activeTab === "gains"
                 ? "%"
+                :  activeTab === "buy"
+                ? "CUSD"
                 : "CUSD"
             }`
           )}
@@ -206,7 +211,7 @@ export const ActionPanel = ({
           <Tab icon={<ArrowUpward />} label="Deposit" value="deposit" />
           <Tab icon={<AttachMoney />} label="Redeem" value="redeem" />
           <Tab icon={<OutlinedFlagRounded />} label="Set Gains" value="gains" />
-          <Tab icon={<PercentOutlined />} label="Yields" value="yields" />
+          <Tab icon={<ShoppingCart />} label="Buy" value="buy" />
         </Tabs>
         <Fade in={true}>{renderContent()}</Fade>
       </CardContent>

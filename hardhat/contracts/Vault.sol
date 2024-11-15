@@ -14,12 +14,17 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
     mapping(address => bool) private isActiveUser;
     address[] public users;
     address private s_forwarderAddress;
+    address private s_nftAddress;
 
     event RedeemPerformed(address indexed user, uint256 shares);
     event InitialDepositUpdated(address indexed user, uint256 newDeposit);
     event ForwarderAddressUpdated(address oldAddress, address newAddress);
+    event NFTAddressUpdated(address oldAddress, address newAddress);
     event DebugUpkeepPerformed(uint256 length);
+
     error OnlyForwarder();
+    error OnlyNFTCaller();
+
     constructor(IERC20 _asset, uint256 _basisPoints) ERC4626(_asset) ERC20("Vault Capstone Token", "vCUSD"){
         vaultOwner = payable(msg.sender);
         entryFeeBasisPoints = _basisPoints;
@@ -28,6 +33,13 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
     modifier onlyForwarder() {
         if (msg.sender != s_forwarderAddress) {
             revert OnlyForwarder();
+        }
+        _;
+    }
+
+    modifier onlyNFTContract(){
+        if( msg.sender != s_nftAddress){
+            revert OnlyNFTCaller();
         }
         _;
     }
@@ -46,6 +58,7 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
     }
 
     function IncreaseYield(uint256 shares) external {
+        require(msg.sender == vaultOwner, "not owner");
         uint256 interest = shares / 10;
         SafeERC20.safeTransferFrom(IERC20(asset()), vaultOwner, address(this), interest);
     }
@@ -151,6 +164,24 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
         return shares;
     }
 
+    function depositRewards(uint256 assets, address receiver) onlyNFTContract external returns (uint256){
+        require(assets <= maxDeposit(vaultOwner), "owner cannot facilitate this transaction");
+
+        if(!isActiveUser[receiver]){
+            users.push(receiver);
+            isActiveUser[receiver] = true;
+        }
+        
+        uint256 shares = previewDeposit(assets);
+        initialDeposit[receiver] += shares;
+
+        emit InitialDepositUpdated(receiver, initialDeposit[receiver]);
+
+        _deposit(vaultOwner, receiver, assets, shares);
+
+        return shares;
+    }
+
     function redeem(uint256 shares, address receiver, address owner) public virtual override returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
 
@@ -207,6 +238,15 @@ contract Vault is ERC4626Fees, AutomationCompatibleInterface {
         
         emit ForwarderAddressUpdated(s_forwarderAddress, forwarderAddress);
         s_forwarderAddress = forwarderAddress;
+    }
+
+    function setNFTAddress(address nftAddress) public{
+        require(msg.sender == vaultOwner, "Not Owner");
+        require(nftAddress !=  address(0), "NFT address cannot be zero address");
+        require(nftAddress != s_nftAddress, "Already set to this address");
+
+        emit NFTAddressUpdated(s_nftAddress, nftAddress);
+        s_nftAddress =  nftAddress;
     }
 
     /*//////////////////////////////////////////////////////////////
