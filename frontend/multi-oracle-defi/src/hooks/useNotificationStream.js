@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CONSTANTS } from "@pushprotocol/restapi";
-import { useUserInitialization } from "./useUserInitialization";
+import { useUserInitialization } from "./usePushInit";
 
 export const useNotificationStream = () => {
   const [notificationState, setNotificationState] = useState({

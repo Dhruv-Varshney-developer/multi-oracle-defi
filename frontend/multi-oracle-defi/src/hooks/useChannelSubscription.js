@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUserInitialization } from "./useUserInitialization";
+import { useUserInitialization } from "./usePushInit";
 
 export const useChannelSubscription = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
