@@ -1,40 +1,34 @@
 import React, { useState, useEffect} from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  CardContent,
-  CardMedia,
-  Snackbar,
-  Alert,
-  Button as MuiButton,
-  Card,
-  Paper,
-  IconButton
-} from "@mui/material";
-import { ArrowBack, ArrowForward } from "@mui/icons-material";
-import { motion } from 'framer-motion';
-import { styled } from "@mui/material/styles";
-import CUSDABI from "../utils/SimpleUSDTokenABI.json";
-import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json"; 
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 import { ethers } from "ethers";
+import { Container, Box, Typography, Grid2 as Grid, Snackbar, Alert} from "@mui/material";
+import { motion } from "framer-motion";
+//ABI
+import CUSDABI from "../utils/SimpleUSDTokenABI.json";
+import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json";
+import VaultABI from "../utils/Vaultabi.json";
+//Components
+import NftCard from '../components/nftCard'; 
 import SimpleWheel from '../components/SimpleWheel';
-
+//Contract addresses
 const cUSDAddress = '0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A';
 const contractAddress = '0xE02305bEe7eec39b831e60b9976bcd63Fc45d1Ec';
+const vaultAddress = '0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5';
 
 const NFT = () => {
+  const [tabIndex, setTabIndex] = useState(0);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [wheelEnabled, setWheelEnabled] = useState(true);
   const [isMinting, setIsMinting] = useState(false);
   const [showNFTCard, setShowNFTCard] = useState(false); 
+  const [mintedRewards, setMintedRewards] = useState(0);
   const [lastMintTimestamp, setLastMintTimestamp] = useState(null);  // Timestamp control
   const [requestId, setRequestId] = useState(null);
   const [nftBalance, setNftBalance] = useState(null);
   const [mintedNFT, setMintedNFT] = useState(null);
   const [openAlert, setOpenAlert] = useState(false);
+  const [progressMessage, setProgressMessage] = useState(null);
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
 
   const connectedAccount = useAccount();
@@ -60,6 +54,25 @@ const NFT = () => {
       console.error("Approval error:", error);
     }
     setLoading(false);
+  };
+
+  //------------------------------------------------------------------------------------------
+  // Setting rewards - deposit to vault
+  const { writeContract:depositRewards } = useWriteContract();
+  const depositRewardsVault = async () => {
+    try {
+      await depositRewards({
+        address: vaultAddress,
+        abi: VaultABI,
+        functionName: 'depositRewards', 
+        args: [mintedNFT.reward, connectedAccount.address],
+      });
+      setProgressMessage("Reward transferred to Vault.");
+      setMintedRewards(0);
+    } catch (error) {
+      console.error("Vault transfer error:", error);
+      setProgressMessage("Error transferring reward.");
+    }
   };
 
   // ------------------------------------------------------------------------------------------
@@ -100,7 +113,6 @@ const NFT = () => {
     args: [currentNFTIndex],
     enabled: false,
   });
-
   const viewNFTById = async (tokenId) => {
     try {
       const result = await refetchNFTDetails({ args: [tokenId] });
@@ -114,29 +126,12 @@ const NFT = () => {
           image: nftImage,
         });
         setShowNFTCard(true);
+        setMintedRewards(nftReward);
       }
     } catch (error) {
       console.error("Error fetching NFT details:", error);
     }
   };
-
-// ------------------------------------------------------------------------------------------
-  // Handle Navigation
-  const navigateNFT = (direction) => {
-    let newIndex = currentNFTIndex;
-    if (direction === 'previous' && currentNFTIndex > 0) {
-      newIndex -= 1;
-    } else if (direction === 'next' && currentNFTIndex < nftBalance - 1) {
-      newIndex += 1;
-    }
-    setCurrentNFTIndex(newIndex);
-    viewNFTById(newIndex);
-  };
-
-  // Check NFT Balance on load
-  /*useEffect(() => {
-    checkNftBalance();
-  }, [connectedAccount]);*/
 
   //------------------------------------------------------------------------------------------
   // Handle the request for random words and mintNFT 
@@ -265,138 +260,54 @@ const NFT = () => {
 
   const segColors = ['#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A', '#5C6BC0', '#42A5F5', '#26C6DA', '#66BB6A', '#5C6BC0', '#42A5F5'];
 
-  const StyledCard = styled(Card)(({ theme }) => ({
-    background: "rgba(0, 0, 0, 0.1)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    borderRadius: theme.spacing(2),
-    padding: "2px",
-    position: 'relative', 
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '400px',
-    height: '400px',
-  }));
+  // Handle tab change
+  const handleTabChange = (event, newValue) => {
+    setTabIndex(newValue);
+  };
 
-  const StyledAlert = styled(Alert)(({ theme }) => ({
-    backdropFilter: "blur(10px)",
-    background: "rgba(0, 0, 0, 0.4)",
-    color: "white",
-  }));
-
-  // InfoCard component to display NFT info with image
-   const InfoCard = ({ name, reward, image }) => (
-    <StyledCard>
-      <CardContent>
-      <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            background: "rgba(255, 255, 255, 0.05)",
-            borderRadius: 2,
-            transition: "0.3s",
-            "&:hover": {
-              background: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
-        >
-        <Typography variant="body1" color="white" align="center">
-          NFT Name: {name}
-        </Typography>
-        </Paper>
-        <CardMedia
-          component="img"
-          height="200"
-          image={image}
-          alt={`${name} image`}
-          sx={{ marginTop: 2, marginBottom: 2, borderRadius: 2 }}
-        />
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            background: "rgba(255, 255, 255, 0.05)",
-            borderRadius: 2,
-            transition: "0.3s",
-            "&:hover": {
-              background: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
-        >
-          <Typography variant="body1" color="white">
-            NFT Reward: Extra {reward}%
-          </Typography>
-        </Paper>
-      </CardContent>
-    </StyledCard>
-  );
-
-  //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
   //Frontend Components 
   return (
-    <Container sx={{ padding: "2rem", textAlign: 'center', height: "80vh", width:"80vh" }}>
-      <Typography variant="h4" component="h1" sx={{ marginBottom: "2rem", color: "white",}}>
-      PAY 10 CUSD TO MINT A UNIQUE CAPSTONE LABS REWARD WITH EXTRA REWARDS!
+    <Container sx={{ padding: "2rem", textAlign: 'center', minHeight: "100vh" }}>
+      <Typography variant="h4" component="h1" sx={{ marginBottom: "1rem", color: "white" }}>
+        Capstone Labs NFT 
       </Typography>
-
-      <motion.div
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }} 
-        transition={{ duration: 0.2 }}
-        style={{
-          display: 'inline-block',
-          marginLeft: "200px"
-        }}
-      >
-        <MuiButton
-          onClick={approveCUSD}
-          disabled={loading}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded mb-4"
-          sx={{ padding: "1rem", left:'22.5%', textAlign: 'center', background:"rgba(255, 255, 255, 0.1)", transform: "translateX(-50%)",
-            "&:hover": {
-            background: '#42A5F5',
-            }, 
-          }}
-        >
-          {loading ? 'Pay 10 CUSD for minting CapstoneLabs NFT': 'Pay 10 CUSD for minting CapstoneLabs NFT'}
-        </MuiButton>
-      </motion.div>
-
-      <Box display="flex" flexDirection="column" alignItems="center" className="mt-8" sx={{ padding:"1.5rem", minHeight: "300px" }}>
-        {wheelEnabled && !showNFTCard &&(
-            <SimpleWheel
-              segments={segments}
-              segColors={segColors}
-              onFinished={spinWheel}
-              wheelEnabled={wheelEnabled}
-              isMinting={isMinting} 
-            />
-        )}
-
-      {showNFTCard && mintedNFT && (
-        <div className="nftCard">
-          <InfoCard sx={{ padding: "1rem"}}
-            name={mintedNFT.name}
-            reward={mintedNFT.reward/10}
-            image={mintedNFT.image}
+      <Grid container padding={8} alignItems="center">
+        <Grid item xs={12} md={1}>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            style={{ marginBottom: "1.5rem" }}
+          >
+          <NftCard
+            tabIndex={tabIndex}
+            handleTabChange={handleTabChange}
+            approveCUSD={approveCUSD}
+            depositRewardsVault={depositRewardsVault}
+            mintedNFT={mintedNFT}
+            mintedRewards={mintedRewards}
+            progressMessage={progressMessage}
           />
-
-          <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-          <IconButton onClick={() => navigateNFT('previous')} disabled={currentNFTIndex <= 0}>
-            <ArrowBack color="inherit" />
-          </IconButton>
-          <Typography variant="body2" color="white" mx={2}>
-            Viewing NFT {currentNFTIndex + 1} of {nftBalance}
-          </Typography>
-          <IconButton onClick={() => navigateNFT('next')} disabled={currentNFTIndex >= nftBalance - 1}>
-            <ArrowForward color="inherit" />
-          </IconButton>
-        </Box>
-        </div>
-        )}
-      </Box>
+          </motion.div>
+        </Grid>
+        <Grid item xs={12} md={1}>
+        <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            style={{ marginBottom: "1.5rem" }}
+          >
+          <SimpleWheel
+            segments={segments}
+            segColors={segColors}
+            onFinished={spinWheel}
+            wheelEnabled={wheelEnabled}
+            isMinting={isMinting}
+          />
+        </motion.div>
+        </Grid>
+      </Grid>
 
       <Snackbar
         open={openAlert}
@@ -404,9 +315,9 @@ const NFT = () => {
         onClose={() => setOpenAlert(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <StyledAlert onClose={() => setOpenAlert(false)} severity="warning">
+        <Alert severity="warning" onClose={() => setOpenAlert(false)}>
           You can only mint one NFT every 5 minutes.
-        </StyledAlert>
+        </Alert>
       </Snackbar>
     </Container>
   );
