@@ -63,7 +63,7 @@ const NotificationPanel = ({ isOpen, title, body, app, icon, onClose }) => {
   return (
     <Fade
       in={isVisible}
-      timeout={300}
+      timeout={1000}
       style={{
         transformOrigin: "right bottom",
       }}
