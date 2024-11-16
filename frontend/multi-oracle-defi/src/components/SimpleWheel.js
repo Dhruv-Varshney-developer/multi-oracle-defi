@@ -1,12 +1,13 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 
-const SimpleWheel = ({ segments, segColors, onFinished, wheelEnabled, isMinting}) => {
+const SimpleWheel = ({ segments, segColors, onSpinStart, wheelEnabled, isMinting}) => {
   const canvasRef = useRef(null);
-  const [angle, setAngle] = useState(0);
+  const angleRef = useRef(0); // Use a ref for smooth animations
+  const animationFrameRef = useRef(null); // To manage the animation frame
   const anglePerSegment = (2 * Math.PI) / segments.length;
   const size = 230; // Rad. wheel
 
-  const drawWheel = (angle = 0) => {
+  const drawWheel = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const centerX = canvas.width / 2;
@@ -16,7 +17,7 @@ const SimpleWheel = ({ segments, segColors, onFinished, wheelEnabled, isMinting}
 
     // Draw each segment
     for (let i = 0; i < segments.length; i++) {
-      const startAngle = anglePerSegment * i + angle;
+      const startAngle = anglePerSegment * i + angleRef.current;
       const endAngle = startAngle + anglePerSegment;
 
       // Draw segment
@@ -56,23 +57,32 @@ const SimpleWheel = ({ segments, segColors, onFinished, wheelEnabled, isMinting}
     ctx.restore();
   };
 
-  useEffect(() => {
-    drawWheel();
-  }, [segments, segColors]);
-
   const animate = () => {
-    setAngle(prevAngle => prevAngle + 0.1); // Rotate slightly
+    angleRef.current += 0.05; // Increment the angle for smooth rotation
     drawWheel();
-    if (isMinting) {
-      requestAnimationFrame(animate);
+    animationFrameRef.current = requestAnimationFrame(animate); // Repeat animation
+  };
+
+  const startAnimation = () => {
+    animationFrameRef.current = requestAnimationFrame(animate); // Start the animation
+    if (onSpinStart) {
+      onSpinStart(); // Notify parent component that spinning has started
     }
   };
 
   useEffect(() => {
     if (isMinting) {
-      animate(); // Start the animation if minting is in progress
+      startAnimation(); // Start spinning when minting starts
+    } else {
+      cancelAnimationFrame(animationFrameRef.current); // Stop the animation
     }
+    return () => cancelAnimationFrame(animationFrameRef.current); // Cleanup on unmount
   }, [isMinting]);
+
+  useEffect(() => {
+    drawWheel(); // Draw the wheel initially
+  }, [segments, segColors]);
+
   
 
   return (
@@ -85,7 +95,7 @@ const SimpleWheel = ({ segments, segColors, onFinished, wheelEnabled, isMinting}
       ></canvas>
       {wheelEnabled && (
           <button 
-            onClick={animate} 
+            onClick={startAnimation} 
             style={{ 
               position: 'absolute', 
               top: '50%', 

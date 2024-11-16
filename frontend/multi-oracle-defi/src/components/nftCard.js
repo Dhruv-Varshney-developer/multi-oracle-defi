@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Typography, CardContent, Button, Tabs, Tab } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { CircularProgress } from "@mui/material";
 import { AccountBalanceWallet, ArrowUpward, Star } from "@mui/icons-material";
 
 const StyledCard = styled(Box)(({ theme }) => ({
@@ -21,7 +20,20 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const NftCard = ({ tabIndex, handleTabChange, approveCUSD, depositRewardsVault, mintedNFT, mintedRewards, progressMessage }) => (
+const NftCard = ({
+  tabIndex,
+  handleTabChange,
+  approveCUSD,
+  depositRewardsVault,
+  mintedNFT,
+  mintedRewards,
+  nftBalance,
+  currentNFTIndex,
+  isRewardDeposited,
+  markRewardAsDepositedFrontend,
+  connectedAccount,
+  progressMessage,
+}) => (
   <StyledCard>
     <CardContent>
       <Box display="flex" alignItems="center" mb={4}>
@@ -35,14 +47,34 @@ const NftCard = ({ tabIndex, handleTabChange, approveCUSD, depositRewardsVault, 
       </Tabs>
       {tabIndex === 0 && (
         <Box mt={10}>
-          <Typography variant="body2">
-            {mintedRewards > 0
-              ? `Deposit ${mintedRewards} CUSD rewards to Vault`
-              : "No rewards available for deposit."}
-          </Typography>
-          <StyledButton onClick={depositRewardsVault} disabled={mintedRewards === 0}>
-            Deposit Rewards
-          </StyledButton>
+          {nftBalance > 0 ? (
+                <>
+                  {isRewardDeposited(connectedAccount.address, currentNFTIndex) ? (
+                    <Typography variant="body2">
+                      Reward for NFT #{currentNFTIndex + 1} already deposited.
+                    </Typography>
+                  ) : (
+                    <>
+                      <Typography variant="body2">
+                        Deposit {Math.floor(mintedRewards/10)} CUSD rewards to Vault
+                      </Typography>
+                      <StyledButton onClick={() => {
+                        depositRewardsVault();
+                        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex);
+                      }} disabled={mintedRewards === 0}>
+                        Deposit Rewards
+                      </StyledButton>
+                    </>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2">No rewards available to deposit.</Typography>
+              )}
+          {progressMessage && (
+            <Box mt={2}>
+              <Typography variant="body2">{progressMessage}</Typography>
+            </Box>
+          )}
         </Box>
       )}
       {tabIndex === 1 && (
@@ -55,21 +87,18 @@ const NftCard = ({ tabIndex, handleTabChange, approveCUSD, depositRewardsVault, 
       )}
       {tabIndex === 2 && (
         <Box mt={10}>
-          {mintedNFT ? (
-            <>
-              <Typography variant="body2">NFT Name: {mintedNFT.name}</Typography>
-              <Typography variant="body2">Reward: {mintedNFT.reward}</Typography>
-              <img src={mintedNFT.image} alt="NFT" style={{ width: "100%", borderRadius: "8px", marginTop: "10px" }} />
-            </>
-          ) : (
-            <Typography variant="body2">No NFT data available</Typography>
-          )}
-        </Box>
-      )}
-      {progressMessage && (
-        <Box mt={2}>
-          <CircularProgress size={20} color="primary" /> <Typography variant="body2">{progressMessage}</Typography>
-        </Box>
+        {mintedNFT ? (
+          <>
+            <Typography variant="body2" sx={{ color: "white" }}>NFT Name: {mintedNFT.name}</Typography>
+            <Typography variant="body2" sx={{ color: "white" }}>Reward: {Math.floor(mintedNFT.reward/10)} cUSD</Typography>
+            <img src={mintedNFT.image} alt="NFT" style={{ width: "80%", maxWidth: "200px", borderRadius: "8px", marginTop: "10px"}} />
+          </>
+        ) : (
+          <Typography variant="body2" sx={{ color: "white" }}>
+            No NFTs available. Mint one to see it here!
+          </Typography>
+        )}
+      </Box>
       )}
     </CardContent>
   </StyledCard>

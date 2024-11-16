@@ -12,10 +12,10 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     using VRFV2PlusClient for VRFV2PlusClient.RandomWordsRequest;
     using Strings for uint256;
 
-    uint256 immutable public subscriptionId;
-    bytes32 immutable public keyHash;
+    uint256 public immutable subscriptionId;
+    bytes32 public immutable keyHash;
     uint256 public requestId;
-    uint32 constant public callbackGasLimit = 200000;
+    uint32 constant public callbackGasLimit = 500000;
     uint16 constant public requestConfirmations = 3;
     uint32 constant public numWords = 1;
 
@@ -27,12 +27,12 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     uint256 constant public mintInterval = 5 minutes;
 
     // Address of the CUSD ERC20 token
-    IERC20 public cUSD;
-    uint256 public constant cUSDAmount = 0.001 * 10 ** 18; // 0.001 tokens in 18 decimal format
+    IERC20 public immutable cUSD;
+    uint256 public constant cUSDAmount = 5 * 10 ** 18; // 5 tokens in 18 decimal format
     address public constant cUSDAddress = 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A; //CapstoneUSD token 
 
      // Base URL for images
-    string private baseImageURL = "https://tomato-genuine-parrot-12.mypinata.cloud/ipfs/QmXiSniGSGi92ETvdCMEbgXQJc2q4p5JYUwQ6SsJgpH4yP/";
+    string private constant baseImageURL = "https://tomato-genuine-parrot-12.mypinata.cloud/ipfs/QmXiSniGSGi92ETvdCMEbgXQJc2q4p5JYUwQ6SsJgpH4yP/";
 
     string[10] private names = [
         "Golden Heart",
@@ -63,6 +63,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     event RequestSent(uint256 requestId, uint32 numWords);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
     event NFTMinted(uint256 tokenId, address owner);
+    event Debug(string message); 
 
     constructor() ERC721("CapstoneLabsNFT", "CLN") VRFConsumerBaseV2Plus(0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B) {
         subscriptionId = 71464033757340969494714285700721349424487006043208639418341710426840418521506;
@@ -77,9 +78,13 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     }
 
     function requestRandomWords() public canMint {
+        emit Debug("Check allowance");
+        // Check if user has approved enough tokens for the contract to transfer
+        require(cUSD.allowance(msg.sender, address(this)) >= cUSDAmount, "Insufficient token allowance.");
+        emit Debug("Before token transfer");
         // Transfer the payment amount from the user to this contract
         require(cUSD.transferFrom(msg.sender, address(this), cUSDAmount), "Token transfer failed.");
-
+        emit Debug("After token transfer");
         requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
@@ -87,7 +92,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
                 requestConfirmations: requestConfirmations,
                 callbackGasLimit: callbackGasLimit,
                 numWords: numWords,
-                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: true})) 
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false})) 
             })
         );
 
@@ -96,7 +101,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         emit RequestSent(requestId, numWords);
     }
 
-    function getTokenURI(uint256 tokenId, uint256[] memory randomWords) internal view returns (string memory) {
+    function getTokenURI(uint256[] memory randomWords) internal view returns (string memory) {
         uint256 index = (randomWords[0] % 101)%10;
         string memory reward = (randomWords[0] % 101).toString();
         
@@ -126,37 +131,29 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     }
 
     function mintNFT(uint256 _requestId) public canMint {
-        (bool fulfilled, uint256[] memory randomWords) = getRequestStatus(_requestId);
-        require(fulfilled, "Randomness not fulfilled");
+        RequestStatus storage request = s_requests[_requestId];
+        require(request.exists && request.fulfilled, "Randomness not fulfilled");
 
-        _safeMint(msg.sender, tokenCounter);
-
-        uint256 index = (randomWords[0] % 101)%10;
-        CapstoneLabsNFT memory newNFT = CapstoneLabsNFT({
-            reward: (randomWords[0] % 101),
+        uint256 index = request.randomWords[0] % 10;
+        capstoneLabsNFT[tokenCounter] = CapstoneLabsNFT({
+            reward: request.randomWords[0] % 101,
             name: names[index],
             image: string(abi.encodePacked(baseImageURL, index.toString(), ".png"))
         });
 
-        capstoneLabsNFT[tokenCounter] = newNFT;
-        string memory tokenURI = getTokenURI(tokenCounter, randomWords);
-        _setTokenURI(tokenCounter, tokenURI);
-
+        _safeMint(msg.sender, tokenCounter);
+        _setTokenURI(tokenCounter, getTokenURI(request.randomWords));
         emit NFTMinted(tokenCounter, msg.sender);
+        
         tokenCounter++;
         lastMintTime[msg.sender] = block.timestamp;
     }
 
     function fulfillRandomWords(uint256 _requestId, uint256[] calldata _randomWords) internal override {
-        require(s_requests[_requestId].exists, "Request not found");
-        s_requests[_requestId].fulfilled = true;
-        s_requests[_requestId].randomWords = _randomWords;
+        RequestStatus storage request = s_requests[_requestId];
+        require(request.exists, "Request not found");
+        request.fulfilled = true;
+        request.randomWords = _randomWords;
         emit RequestFulfilled(_requestId, _randomWords);
-    }
-
-    function getRequestStatus(uint256 _requestId) public view returns (bool fulfilled, uint256[] memory randomWords) {
-        require(s_requests[_requestId].exists, "Request not found");
-        RequestStatus memory request = s_requests[_requestId];
-        return (request.fulfilled, request.randomWords);
     }
 }

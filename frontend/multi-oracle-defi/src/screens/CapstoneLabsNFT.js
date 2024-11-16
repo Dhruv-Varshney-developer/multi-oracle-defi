@@ -1,7 +1,7 @@
 import React, { useState, useEffect} from 'react';
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 import { ethers } from "ethers";
-import { Container, Box, Typography, Grid2 as Grid, Snackbar, Alert} from "@mui/material";
+import { Container, Typography, Grid2 as Grid, Snackbar, Alert} from "@mui/material";
 import { motion } from "framer-motion";
 //ABI
 import CUSDABI from "../utils/SimpleUSDTokenABI.json";
@@ -12,14 +12,14 @@ import NftCard from '../components/nftCard';
 import SimpleWheel from '../components/SimpleWheel';
 //Contract addresses
 const cUSDAddress = '0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A';
-const contractAddress = '0xE02305bEe7eec39b831e60b9976bcd63Fc45d1Ec';
+const contractAddress = '0x15d96e80a5da126a8359a2efa6de9a62e6f1feeb';
 const vaultAddress = '0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5';
 
 const NFT = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [wheelEnabled, setWheelEnabled] = useState(true);
+  const [wheelEnabled, setWheelEnabled] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [showNFTCard, setShowNFTCard] = useState(false); 
   const [mintedRewards, setMintedRewards] = useState(0);
@@ -30,6 +30,7 @@ const NFT = () => {
   const [openAlert, setOpenAlert] = useState(false);
   const [progressMessage, setProgressMessage] = useState(null);
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
+  const [depositedRewardsMapping, setDepositedRewardsMapping] = useState({});
 
   const connectedAccount = useAccount();
 
@@ -38,7 +39,7 @@ const NFT = () => {
   const { writeContract: writeCUSD } = useWriteContract();
   // Function to approve the cUSD token transfer
   const approveCUSD = async () => {
-    if (loading) return;
+    if (loading || wheelEnabled) return;
 
     setLoading(true);
     try {
@@ -46,13 +47,16 @@ const NFT = () => {
         address: cUSDAddress,
         abi: CUSDABI,
         functionName: 'approve',
-        args: [contractAddress, ethers.utils.parseUnits("0.01", 18)],
+        args: [contractAddress, ethers.utils.parseUnits("5", 18)],
       });
+
       setWheelEnabled(true);
       setShowNFTCard(false);
     } catch (error) {
       console.error("Approval error:", error);
+      setWheelEnabled(false);
     }
+
     setLoading(false);
   };
 
@@ -61,18 +65,38 @@ const NFT = () => {
   const { writeContract:depositRewards } = useWriteContract();
   const depositRewardsVault = async () => {
     try {
+      const rewardInt = Math.floor(mintedNFT.reward/10); 
+      const reward = ethers.utils.parseUnits(rewardInt.toString(), 18);
+
       await depositRewards({
         address: vaultAddress,
         abi: VaultABI,
         functionName: 'depositRewards', 
-        args: [mintedNFT.reward, connectedAccount.address],
+        args: [reward, connectedAccount.address],
       });
+
       setProgressMessage("Reward transferred to Vault.");
       setMintedRewards(0);
     } catch (error) {
       console.error("Vault transfer error:", error);
       setProgressMessage("Error transferring reward.");
+    } finally {
+      setLoading(false); // Asegura que el estado de carga se detiene
     }
+  };
+
+  const markRewardAsDepositedFrontend = (userAddress, tokenId) => {
+    setDepositedRewardsMapping((prev) => ({
+      ...prev,
+      [userAddress]: {
+        ...(prev[userAddress] || {}),
+        [tokenId]: true,
+      },
+    }));
+  };
+
+  const isRewardDeposited = (userAddress, tokenId) => {
+    return depositedRewardsMapping[userAddress]?.[tokenId] || false;
   };
 
   // ------------------------------------------------------------------------------------------
@@ -127,12 +151,20 @@ const NFT = () => {
         });
         setShowNFTCard(true);
         setMintedRewards(nftReward);
+      }else{
+        setMintedNFT(null);
       }
     } catch (error) {
       console.error("Error fetching NFT details:", error);
     }
   };
 
+  useEffect(() => {
+    checkNftBalance();
+    if (tabIndex === 2 && nftBalance > 0) {
+      viewNFTById(nftBalance - 1);
+    }
+  }, [tabIndex, nftBalance]);
   //------------------------------------------------------------------------------------------
   // Handle the request for random words and mintNFT 
   const { writeContract } = useWriteContract();
@@ -144,6 +176,7 @@ const NFT = () => {
 
     setLoading(true);
     setIsMinting(true);
+    setWheelEnabled(true); 
 
     const now = Date.now(); // Set timestamp
     const balance = await refetchBalance();
@@ -153,8 +186,6 @@ const NFT = () => {
       setOpenAlert(true);
       return;
     }
-
-    setLoading(true);
 
     try {
       // Poll for requestId change (up to 100 seconds)
@@ -213,8 +244,7 @@ const NFT = () => {
             setCurrentNFTIndex(currentNftCount - 1);
             await viewNFTById(currentNftCount - 1);
 
-            // Once minting is complete, reset isMinting to stop the wheel
-            setIsMinting(false); 
+            // Once minting is complete,stop the wheel 
             setWheelEnabled(false); 
             break;
           }
@@ -228,10 +258,11 @@ const NFT = () => {
 
     } catch (error) {
       console.error("Minting error:", error);
-      setIsMinting(false);
       setStatus("Error occurred during minting.");
     } finally {
+      setIsMinting(false);
       setLoading(false);
+      setWheelEnabled(false);
     }
   };
 
@@ -280,15 +311,20 @@ const NFT = () => {
             transition={{ duration: 0.3 }}
             style={{ marginBottom: "1.5rem" }}
           >
-          <NftCard
-            tabIndex={tabIndex}
-            handleTabChange={handleTabChange}
-            approveCUSD={approveCUSD}
-            depositRewardsVault={depositRewardsVault}
-            mintedNFT={mintedNFT}
-            mintedRewards={mintedRewards}
-            progressMessage={progressMessage}
-          />
+            <NftCard
+              tabIndex={tabIndex}
+              handleTabChange={handleTabChange}
+              approveCUSD={approveCUSD}
+              depositRewardsVault={depositRewardsVault}
+              mintedNFT={mintedNFT}
+              mintedRewards={mintedRewards}
+              nftBalance={nftBalance}
+              currentNFTIndex={currentNFTIndex}
+              isRewardDeposited={isRewardDeposited}
+              markRewardAsDepositedFrontend={markRewardAsDepositedFrontend}
+              connectedAccount={connectedAccount}
+              progressMessage={progressMessage}
+            />
           </motion.div>
         </Grid>
         <Grid item xs={12} md={1}>
@@ -301,7 +337,7 @@ const NFT = () => {
           <SimpleWheel
             segments={segments}
             segColors={segColors}
-            onFinished={spinWheel}
+            onSpinStart={spinWheel}
             wheelEnabled={wheelEnabled}
             isMinting={isMinting}
           />
