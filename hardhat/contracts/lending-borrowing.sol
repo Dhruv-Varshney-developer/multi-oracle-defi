@@ -127,12 +127,12 @@ contract LendingBorrowing is Ownable {
     function updateBorrowedAmountWithInterest(address user) internal {
         uint256 repayment = calculateRepaymentAmount(user);
         User storage currentUser = users[user];
+        uint256 lastUpdated = currentUser.lastInterestUpdate;
 
         currentUser.borrowedAmountCUSD = repayment;
         currentUser.lastInterestUpdate = block.timestamp;
 
        
-        uint256 lastUpdated = currentUser.lastInterestUpdate;
 
         sendNotification(
             user,
@@ -146,9 +146,9 @@ contract LendingBorrowing is Ownable {
                     "Collateral ETH (in wei): ",
                     currentUser.collateralWei.toString(),
                     "\n",
-                    "Last Updated: ",
+                    "Time gap between last update and this update: ",
                     ((block.timestamp - lastUpdated) / 60).toString(),
-                    " minutes ago"
+                    " minutes "
                 )
             )
         );
