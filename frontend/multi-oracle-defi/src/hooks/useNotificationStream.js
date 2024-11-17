@@ -29,8 +29,8 @@ export const useNotificationStream = () => {
           isOpen: true,
         });
 
-        const audio = new Audio("/notification.mp3");
-        audio.play();
+ //       const audio = new Audio("/notification.mp3");
+ //       audio.play();
       });
 
       stream.connect();
