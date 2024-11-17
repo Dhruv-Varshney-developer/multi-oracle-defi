@@ -117,7 +117,7 @@ export const ActionPanel = ({
         <StyledTextField
           fullWidth
           label={`Amount (${
-            activeTab === "borrow" || activeTab === "repay" ? "SUSD" : "ETH"
+            activeTab === "borrow" || activeTab === "repay" ? "CUSD" : "ETH"
           })`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -136,7 +136,7 @@ export const ActionPanel = ({
             {isWriteLoading || isTxLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Approve SUSD"
+              "Approve CUSD"
             )}
           </StyledButton>
         )}
@@ -150,7 +150,7 @@ export const ActionPanel = ({
             <CircularProgress size={24} color="inherit" />
           ) : (
             `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ${
-              activeTab === "borrow" || activeTab === "repay" ? "SUSD" : "ETH"
+              activeTab === "borrow" || activeTab === "repay" ? "CUSD" : "ETH"
             }`
           )}
         </StyledButton>
