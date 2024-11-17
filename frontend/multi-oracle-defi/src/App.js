@@ -1,52 +1,32 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ConnectKitButton } from "connectkit";
-import { useAccount } from "wagmi";
-import LendingBorrowing from "./screens/LendingBorrowing";
-import PriceFeed from "./screens/PriceFeed";
-import NFT from "./screens/nft";
-import CLogo from "./assets/CLogo.png";
+
+import { useAccount } from 'wagmi';
+import LendingBorrowing from './screens/LendingBorrowing';
+import Vault from './screens/Vault';
+import NFT from './screens/nft';
+import CLogo from './assets/CLogo.png';
+
 
 const App = () => {
   const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState("Vault"); // Set a default active tab
 
   const tabs = [
-    { name: "Vault", component: <PriceFeed /> },
-    { name: "Lending & Borrowing", component: <LendingBorrowing /> },
-    { name: "NFT", component: <NFT /> },
-    { name: "Analytics", component: <div>Analytics</div> },
+
+    { name: 'Vault', component: <Vault /> },
+    { name: 'Lending & Borrowing', component: <LendingBorrowing /> },
+    { name: 'NFT', component: <NFT /> },
   ];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         {!isConnected && (
           <>
-            <h1
-              style={{
-                marginTop: "4rem",
-                fontSize: "3rem",
-                fontWeight: "bold",
-                color: "white",
-              }}
-            >
+            <h1 style={{ marginTop: '4rem', fontSize: '3rem', fontWeight: 'bold', color: 'white' }}>
               Capstone Labs
             </h1>
             <motion.div
