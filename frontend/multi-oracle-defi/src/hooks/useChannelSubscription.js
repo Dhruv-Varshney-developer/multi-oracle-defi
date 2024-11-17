@@ -28,7 +28,14 @@ export const useChannelSubscription = () => {
     try {
       const user = await initializeUser();
       await user.notification.subscribe(
-        `eip155:${CHAIN_ID}:${CHANNEL_ADDRESS}`
+        `eip155:${CHAIN_ID}:${CHANNEL_ADDRESS}`,
+        {
+          settings: [
+            {
+              enabled: true, // Default enabled
+            },
+          ],
+        }
       );
       setIsSubscribed(true);
       return user;
@@ -42,7 +49,14 @@ export const useChannelSubscription = () => {
     try {
       const user = await initializeUser();
       await user.notification.unsubscribe(
-        `eip155:${CHAIN_ID}:${CHANNEL_ADDRESS}`
+        `eip155:${CHAIN_ID}:${CHANNEL_ADDRESS}`,
+        {
+          settings: [
+            {
+              enabled: true, // Default enabled
+            },
+          ],
+        }
       );
       setIsSubscribed(false);
     } catch (error) {
