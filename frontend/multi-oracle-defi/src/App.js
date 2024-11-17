@@ -15,7 +15,6 @@ const App = () => {
     { name: "Vault", component: <PriceFeed /> },
     { name: "Lending & Borrowing", component: <LendingBorrowing /> },
     { name: "NFT", component: <NFT /> },
-    { name: "Analytics", component: <div>Analytics</div> },
   ];
 
   return (
