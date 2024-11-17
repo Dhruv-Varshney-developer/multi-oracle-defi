@@ -67,21 +67,22 @@ const NFT = () => {
     try {
       const rewardInt = Math.floor(mintedNFT.reward/10); 
       const reward = ethers.utils.parseUnits(rewardInt.toString(), 18);
-
+      console.log("deposit rewards inicial");
       await depositRewards({
         address: vaultAddress,
         abi: VaultABI,
         functionName: 'depositRewards', 
         args: [reward, connectedAccount.address],
       });
-
+      console.log("deposit rewards final");
       setProgressMessage("Reward transferred to Vault.");
       setMintedRewards(0);
+      markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex);
     } catch (error) {
       console.error("Vault transfer error:", error);
       setProgressMessage("Error transferring reward.");
     } finally {
-      setLoading(false); // Asegura que el estado de carga se detiene
+      setLoading(false);
     }
   };
 
@@ -321,7 +322,6 @@ const NFT = () => {
               nftBalance={nftBalance}
               currentNFTIndex={currentNFTIndex}
               isRewardDeposited={isRewardDeposited}
-              markRewardAsDepositedFrontend={markRewardAsDepositedFrontend}
               connectedAccount={connectedAccount}
               progressMessage={progressMessage}
             />

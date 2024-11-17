@@ -30,7 +30,6 @@ const NftCard = ({
   nftBalance,
   currentNFTIndex,
   isRewardDeposited,
-  markRewardAsDepositedFrontend,
   connectedAccount,
   progressMessage,
 }) => (
@@ -58,10 +57,8 @@ const NftCard = ({
                       <Typography variant="body2">
                         Deposit {Math.floor(mintedRewards/10)} CUSD rewards to Vault
                       </Typography>
-                      <StyledButton onClick={() => {
-                        depositRewardsVault();
-                        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex);
-                      }} disabled={mintedRewards === 0}>
+                      <StyledButton onClick={depositRewardsVault}
+                      disabled={mintedRewards === 0}>
                         Deposit Rewards
                       </StyledButton>
                     </>
