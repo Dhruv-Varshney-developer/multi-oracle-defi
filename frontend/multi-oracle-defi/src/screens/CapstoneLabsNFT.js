@@ -64,34 +64,46 @@ const NFT = () => {
   // Setting rewards - deposit to vault
   const { writeContract:depositRewards } = useWriteContract();
   const depositRewardsVault = async () => {
+
+    setLoading(true);
+    const rewardInt = Math.floor(Number(mintedNFT.reward)/10);
+    const reward = rewardInt * 10**18;
+    console.log("reward: ", rewardInt);
     try {
-      const rewardInt = Math.floor(mintedNFT.reward/10); 
-      const reward = ethers.utils.parseUnits(rewardInt.toString(), 18);
-      console.log("deposit rewards inicial");
-      await depositRewards({
+        const result= await depositRewards({
         address: vaultAddress,
         abi: VaultABI,
         functionName: 'depositRewards', 
         args: [reward, connectedAccount.address],
       });
-      console.log("deposit rewards final");
-      setProgressMessage("Reward transferred to Vault.");
-      setMintedRewards(0);
-      markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex);
+
+/*     if(result){
+        console.log("Deposit successful, return: ", result.toString());
+        setProgressMessage("Reward transferred to Vault.");
+        setMintedRewards(0);
+        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, true);
+      }else{
+        console.error("No reward to transfer");
+        setProgressMessage("Error transferring reward.");
+        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, false);
+      }*/
+
     } catch (error) {
       console.error("Vault transfer error:", error);
       setProgressMessage("Error transferring reward.");
+      markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, false);
     } finally {
       setLoading(false);
     }
+
   };
 
-  const markRewardAsDepositedFrontend = (userAddress, tokenId) => {
+  const markRewardAsDepositedFrontend = (userAddress, tokenId, isDeposited) => {
     setDepositedRewardsMapping((prev) => ({
       ...prev,
       [userAddress]: {
         ...(prev[userAddress] || {}),
-        [tokenId]: true,
+        [tokenId]: isDeposited,
       },
     }));
   };
