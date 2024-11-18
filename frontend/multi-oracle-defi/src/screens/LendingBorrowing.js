@@ -3,7 +3,7 @@ import { Box, Container, Grid } from "@mui/material";
 import { AccountBalance, TrendingUp } from "@mui/icons-material";
 import { formatEther } from "viem";
 import { ActionPanel } from "../components/ActionPanel";
-import { InfoCard } from "../components/InfoCard";
+import { InfoCard } from "../components/infoCard";
 import { ProtocolHeader } from "../components/ProtocolHeader";
 import { useContractAddresses } from "../hooks/useContractAddresses";
 import { useProtocolData } from "../hooks/useProtocolData";
