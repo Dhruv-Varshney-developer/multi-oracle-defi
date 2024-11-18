@@ -1,6 +1,6 @@
 import { Box, CardContent, Grid, Paper, Typography } from "@mui/material";
 
-import { StyledCard } from "./BankComponents";
+import { StyledCard } from "./StyledComponents";
 
 export const InfoCard = ({ title, items, icon }) => (
   <StyledCard>

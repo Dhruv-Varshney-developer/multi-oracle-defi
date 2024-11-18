@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // The smallest unit for this token is cent.
+// Verified contract deployed at 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A
 
 pragma solidity ^0.8.22;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
