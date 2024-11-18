@@ -2,86 +2,108 @@
 
 ## Project Overview
 
-The Multi-Oracle-DeFi project integrates multiple decentralized finance (DeFi) protocols powered by oracles. Users can connect their wallets to interact with three core features: a Lending-Borrowing Protocol, Lucky Draw NFT Minting, and a Price Feed Display. The oracles become activated as soon as a wallet is connected, making the DeFi operations seamless.
+Multi-Oracle-DeFi is a comprehensive DeFi ecosystem integrating multiple Oracle services and DeFi protocols. The platform features three interconnected components: a Lending-Borrowing Protocol, an ERC4626-compliant Vault, and a VRF-powered NFT Minting system, all unified through a common CUSD token standard. The project leverages advanced Web3 technologies including Chainlink's suite of products, OpenZeppelin Defender for automation and monitoring, and Push Protocol for real-time notifications.
 
-This project showcases the integration of smart contracts with Chainlink oracles, demonstrating real-time price feeds, secure random number generation (VRF), and lending-borrowing mechanisms. It also features a front-end, enabling users to interact directly with these blockchain-based systems.
-
-## Features
+## Core Features
 
 ### 1. Lending-Borrowing Protocol
 
 #### Description
+Users can deposit ETH as collateral to borrow CUSD tokens. The protocol leverages Chainlink's ETH/USD price feed for accurate collateral valuation, with Push Protocol integration for real-time notifications of key events.
 
-The Lending-Borrowing protocol allows users to deposit ETH as collateral and borrow CUSD (Simple USD Token). The collateral value is determined using Chainlink's ETH/USD price feed, ensuring accurate and up-to-date price data. Borrowers can withdraw up to 20% of their collateral’s value in CUSD, a token minted by the protocol.
-
-#### Technical Architecture
-
+#### Technical Implementation
 - **Smart Contracts:**
-  - **LendingBorrowing Contract**: Manages ETH deposits, collateralization, CUSD borrowing, and debt repayment.
-  - **Chainlink Price Feed Integration**: Fetches the ETH/USD price for collateral valuation. Uses chainlink price feed oracles.
-  - **CapstoneUSD Contract**: Handles the minting, transferring, and burning of CUSD tokens.
-- **Frontend**:
-  - Built with **React** and **Web3 integration** using **wagmi** and **viem** libraries.
-  - Allows users to interact with the smart contracts, deposit ETH, borrow CUSD, and repay loans directly through the interface.
+ - LendingBorrowing Contract with Push Protocol notifications for deposit, borrow, repay, and withdrawal events
+ - Chainlink Price Feed integration for real-time ETH/USD pricing
+ - CUSD (ERC20) token contract with controlled minting mechanisms
+ - OpenZeppelin Defender integration:
+   - Automated interest calculations and borrowed amount updates using Defender Actions
+   - Relayer implementation for secure automated transactions
+   - Monitoring system for critical protocol metrics and events
+- **Key Functions:**
+ - Collateral deposit with event notifications
+ - CUSD borrowing based on collateral value
+ - Dynamic interest calculation with automated updates
+ - Collateral withdrawal system
+ - Owner-authorized interest rate management
+ - Automated borrowed amount updates for all users through OpenZeppelin Defender
 
-### 2. Price Feed Display
+### 2. ERC4626 Vault
 
 #### Description
+An implementation of the ERC4626Fees standard featuring automated withdrawals through Chainlink Automation and a sophisticated yield distribution system.
 
-The price feed display provides real-time cryptocurrency prices, including LINK, BTC, ETH, SOL, and MATIC, fetched from Chainlink Price Feeds. This integration allows the frontend to display accurate and secure price data directly from a decentralized oracle network.
+#### Technical Features
+- ERC4626 standard compliance with custom fee extensions
+- Chainlink Automation integration:
+ - Automated batch withdrawals based on yield thresholds
+ - Scheduled yield distribution mechanisms
+- Mock yield environment for testing automated features
+- ETH to CUSD conversion capabilities
+- Flexible fee structure implementation
+- Share-based accounting system for yield tracking
 
-#### Technical Architecture
-
-- **Smart Contracts:**
-
-  - **Price Feed Contract**: Utilizes Chainlink oracles to fetch live price data for major cryptocurrencies.
-
-- **Frontend**:
-  - Developed in **React**, the UI displays real-time prices using a simple **price-feed widget** that queries the on-chain price data.
-  - Uses **wagmi** and **viem** for Web3 wallet connection and blockchain interactions.
-
-### 3. Lucky Draw NFT (with Chainlink VRF)
+### 3. NFT Minting with Chainlink VRF
 
 #### Description
+A sophisticated NFT minting system utilizing Chainlink VRF for verifiably random attribute generation, with CUSD as the minting currency.
 
-The Lucky Draw NFT system allows users to mint NFTs with random attributes generated by Chainlink VRF (Verifiable Random Function). Each mint produces an NFT with unique traits, creating a gamified experience around decentralized random number generation.
+#### Technical Stack
+- Smart contracts with Chainlink VRF V2 integration
+- IPFS decentralized storage for metadata and assets.
+- Notifications 
+- CUSD token integration for minting operations
+- Automated metadata generation and management
 
-#### Technical Architecture
+## Advanced Technology Stack
 
-- **Smart Contracts:**
+### Blockchain Infrastructure
+- **Smart Contracts:** Solidity
+- **Oracle Services:** 
+ - Chainlink Price Feeds for real-time asset pricing
+ - Chainlink VRF V2 for random number generation
+ - Chainlink Automation for scheduled operations
+- **Automation & Monitoring:**
+ - OpenZeppelin Defender Actions for automated protocol updates
+ - OpenZeppelin Defender Relayers for secure transaction execution
+ - OpenZeppelin Defender Monitors for system oversight
+- **Network:** Sepolia Testnet
+- **Token Standards:** ERC20, ERC4626, ERC721
 
-  - **NFT Minting Contract**: Integrated with Chainlink VRF to securely generate random attributes for each NFT.
-  - **Chainlink VRF**: Ensures verifiably random results for NFT attributes, providing fairness in the minting process.
-  - **IPFS**: Stores NFT metadata and images for decentralized accessibility.
+### Frontend Architecture
+- React with modular component design
+- Web3 Integration: 
+ - wagmi for blockchain state management
+ - viem for type-safe ethereum interactions
+- IPFS integration for decentralized storage
+- Push Protocol for real-time DeFi notifications
+- Responsive UI with protocol statistics display
 
-- **Frontend**:
-  - Simple **React** interface for users to connect their wallet and mint NFTs. Displays the minted NFTs and their randomly generated attributes.
-  - **Web3 integration** using **wagmi** and **viem** for interaction with the blockchain contracts, minting functionality, and display of NFTs.
+## Protocol Interoperability
 
-## Technology Stack
+### CUSD Token Integration
+- Primary borrowing currency in lending protocol
+- Vault share representation for yield tracking
+- NFT minting currency
+- Direct purchase with ETH available through multiple protocol entry points
+- Cross-protocol utility enabling seamless movement between features
 
-- **Blockchain**:
+## Contract Deployments (Sepolia Testnet)
 
-  - Smart contracts written in **Solidity**.
-  - **Chainlink oracles** for price feeds and VRF (Verifiable Random Function).
-  - Deployed on **Polygon Amoy Testnet** for testing and demonstration purposes.
+- CUSD Token: `0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A`
+ - Features: Controlled minting, ETH purchase functionality, owner withdrawal capabilities
+- LendingBorrowing: `0x1e88e0dc3924D9869A1Ed7d86197341dd459CF48`
+ - Integrated with Push Protocol, Chainlink Price Feeds, and OpenZeppelin Defender.
+- NFT Minter : `0x9044B578C1F2F3E9cb3e478FdfB39A75fE2f1997`
+  - NFT (ERC 721) contract integrated with Chainlink VRF, IPFS, vault and CUSD contracts.
+- Vault: `0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5`
+ - ERC 4626 contract integrated with chainlink automation and CUSD contract.
 
-- **Frontend**:
-  - Built with **React**.
-  - Web3 integration using **wagmi** and **viem** for wallet connection and contract interaction.
-  - IPFS for decentralized storage of NFT metadata.
+## Live Implementation
+Access the DApp at [https://multi-oracle-defi.vercel.app/](https://multi-oracle-defi.vercel.app/)
 
-## Contributions
-
-We welcome contributions! Please read our [contributions.md](contributions.md) file for guidelines on how to contribute to this project.
-
-## Deployment
-
-The project is live [here](https://multi-oracle-defi.vercel.app/).
-
-CUSD token contract is deployed on sepolia testnet at 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A
-LendingBorrowing contract is deployed on sepolia testnet at 0x1e88e0dc3924D9869A1Ed7d86197341dd459CF48
+## Contributing
+Please refer to [contributions.md](contributions.md) for development guidelines.
 
 ## License
-
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
