@@ -25,6 +25,7 @@ const NftCard = ({
   handleTabChange,
   approveCUSD,
   depositRewardsVault,
+  requestRandomW,
   mintedNFT,
   mintedRewards,
   nftBalance,
@@ -32,6 +33,7 @@ const NftCard = ({
   isRewardDeposited,
   connectedAccount,
   progressMessage,
+  /*isApproved,*/
 }) => (
   <StyledCard>
     <CardContent>
@@ -45,7 +47,7 @@ const NftCard = ({
         <Tab icon={<Star />} label="NFT Info" sx={{color: "white"}}/>
       </Tabs>
       {tabIndex === 0 && (
-        <Box mt={10}>
+        <Box mt={15}>
           {nftBalance > 0 ? (
                 <>
                   {isRewardDeposited(connectedAccount.address, currentNFTIndex) ? (
@@ -75,15 +77,21 @@ const NftCard = ({
         </Box>
       )}
       {tabIndex === 1 && (
-        <Box mt={10}>
-          <Typography variant="body2">Approve and Mint NFT</Typography>
+        <Box mt={15}>
+          <Typography variant="body2">Approve spending 5 CUSD</Typography>
           <StyledButton onClick={approveCUSD}>
             Approve 5 CUSD
+          </StyledButton>
+          <Typography variant="body2" sx={{ marginTop: "1rem" }}>
+            
+          </Typography>
+          <StyledButton onClick={requestRandomW}>
+          ⭐Try Your Luck!
           </StyledButton>
         </Box>
       )}
       {tabIndex === 2 && (
-        <Box mt={10}>
+        <Box mt={15}>
         {mintedNFT ? (
           <>
             <Typography variant="body2" sx={{ color: "white" }}>NFT Name: {mintedNFT.name}</Typography>

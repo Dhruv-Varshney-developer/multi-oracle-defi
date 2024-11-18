@@ -31,6 +31,7 @@ const NFT = () => {
   const [progressMessage, setProgressMessage] = useState(null);
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
   const [depositedRewardsMapping, setDepositedRewardsMapping] = useState({});
+  /*const [isApproved, setIsApproved] = useState(false);*/
 
   const connectedAccount = useAccount();
 
@@ -49,17 +50,41 @@ const NFT = () => {
         functionName: 'approve',
         args: [contractAddress, ethers.utils.parseUnits("5", 18)],
       });
-
-      setWheelEnabled(true);
+      
+      /*await checkApproval();
+      setIsApproved(true);*/
       setShowNFTCard(false);
     } catch (error) {
       console.error("Approval error:", error);
-      setWheelEnabled(false);
     }
 
     setLoading(false);
   };
 
+  const { refetch: refetchApproval } = useReadContract({
+    address: cUSDAddress,
+    abi: CUSDABI,
+    functionName: 'allowance',
+    args: [connectedAccount.address, contractAddress],
+  });
+
+  /*const checkApproval = async () => {
+    try {
+      const allowance = await refetchApproval();
+      console.log("Allowance: ", allowance.data);
+      const allowanceInCUSD = parseFloat(ethers.utils.formatUnits(allowance.data, 18));
+      setIsApproved(allowanceInCUSD >= 5); 
+    } catch (error) {
+      console.error("Error checking approval:", error);
+      setIsApproved(false);
+    }
+  };
+
+  useEffect(() => {
+    if (connectedAccount.address) {
+      checkApproval();
+    }
+  }, [connectedAccount.address]);*/
   //------------------------------------------------------------------------------------------
   // Setting rewards - deposit to vault
   const { writeContract:depositRewards } = useWriteContract();
@@ -77,16 +102,9 @@ const NFT = () => {
         args: [reward, connectedAccount.address],
       });
 
-     if(result){
-        console.log("Deposit successful, return: ", result.toString());
-        setProgressMessage("Reward transferred to Vault.");
-        setMintedRewards(0);
-        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, true);
-      }else{
-        console.error("No reward to transfer");
-        setProgressMessage("Error transferring reward.");
-        markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, false);
-      }
+      setProgressMessage("Reward transferred to Vault.");
+      setMintedRewards(0);
+      markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, true);
 
     } catch (error) {
       console.error("Vault transfer error:", error);
@@ -178,87 +196,90 @@ const NFT = () => {
       viewNFTById(nftBalance - 1);
     }
   }, [tabIndex, nftBalance]);
+
+
   //------------------------------------------------------------------------------------------
   // Handle the request for random words and mintNFT 
   const { writeContract } = useWriteContract();
 
   //------------------------------------------------------------------------------------------
-  // Spin wheel for requestrandomwords and mintNFT 
-  const spinWheel = async () => {
-    if (loading || !wheelEnabled) return;
-
-    setLoading(true);
-    setIsMinting(true);
-    setWheelEnabled(true); 
-
-    const now = Date.now(); // Set timestamp
-    const balance = await refetchBalance();
-    const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
-    console.log("Nft balance: ", nftCount);
-    if (lastMintTimestamp && now - lastMintTimestamp < 5 * 60 * 1000) {
-      setOpenAlert(true);
-      return;
-    }
-
+  // Request random words
+  const requestRandomW = async ()=>{
     try {
-      // Poll for requestId change (up to 100 seconds)
-      let initialRequestId, currentRequestId = requestId;
-      let elapsedTime = 0;
-      const pollInterval = 1000; // 10 seconds
-      let requestIdUpdated = false;
-      let tokenMinted = false;
-
       // Request VRF for random words
       await writeContract({
         address: contractAddress,
         abi: NFTMintingWithVRFABI,
         functionName: 'requestRandomWords',
       });
+      setWheelEnabled(true);
+    }
+    catch(error){
+      console.error("Error requesting random words:", error);
+    }
+  };
 
-      //Wait to get requestId back
-      while (elapsedTime < 1000000 && !requestIdUpdated) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        elapsedTime += pollInterval;
+  // Spin wheel for mintNFT 
+  const spinWheel = async () => {
+    if (loading || !wheelEnabled) return;
+    
+    const now = Date.now(); // Set timestamp
+    if (lastMintTimestamp && now - lastMintTimestamp < 5 * 60 * 1000) {
+      setOpenAlert(true);
+      return;
+    }
 
-        const result = await refetchRequestId();
-        currentRequestId = result?.data ? result.data.toString() : initialRequestId;
+    // Poll for requestId change (up to 100 seconds)
+    const balance = await refetchBalance();
+    const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
 
-        if (currentRequestId !== initialRequestId) {
-          setRequestId(currentRequestId); // Update the requestId state
-          console.log("requestId: ", currentRequestId);
-          requestIdUpdated = true;
-          break;
-        }
+    console.log("initial requestId: ", requestId);
+    let elapsedTime = 0;
+    const pollInterval = 1000; // 10 seconds
+    let requestIdUpdated = false;
+    let tokenMinted = false;
+    setLoading(true);
+    setIsMinting(true); 
+
+    //Wait to get requestId back
+    while (elapsedTime < 10000 && !requestIdUpdated) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      elapsedTime += pollInterval;
+
+      const result = await refetchRequestId();
+      let currentRequestId = result?.data ? result.data.toString() : requestId;
+      console.log("current requestId: ", currentRequestId);
+      if (currentRequestId !== requestId) {
+        setRequestId(currentRequestId); // Update the requestId state
+        requestIdUpdated = true;
+        break;
       }
+    }
 
-      if (!requestIdUpdated) {
-        throw new Error("Request timed out. No new requestId received.");
-      } else {
-        // Proceed to mint the NFT with the new requestId
-
+    if (!requestIdUpdated) {
+      throw new Error("Request timed out. No new requestId received.");
+    }
+   
+    try {
         await writeContract({
           address: contractAddress,
           abi: NFTMintingWithVRFABI,
           functionName: 'mintNFT',
-          args: [currentRequestId], 
+          args: [requestId], 
         });
-        console.log("mintNFT requested");
 
         //Wait to get new NFT minted 
         elapsedTime = 0;
-        while (elapsedTime < 1000000 && !tokenMinted) {
+        while (elapsedTime < 100000 && !tokenMinted) {
           await new Promise(resolve => setTimeout(resolve, pollInterval));
           elapsedTime += pollInterval;
 
           let currentBalance = await refetchBalance();
-          let currentNftCount = currentBalance?.data?.toNumber ? currentBalance.data.toNumber() : parseInt(currentBalance.data);    
+          let currentNftCount = currentBalance?.data?.toNumber ? currentBalance.data.toNumber() : parseInt(currentBalance.data); 
           if (currentNftCount > nftCount) {
             tokenMinted = true;
             setCurrentNFTIndex(currentNftCount - 1);
             await viewNFTById(currentNftCount - 1);
-
-            // Once minting is complete,stop the wheel 
-            setWheelEnabled(false); 
             break;
           }
         }
@@ -266,16 +287,14 @@ const NFT = () => {
         if (!tokenMinted) {
           throw new Error("Minting timeout: No new tokenId received.");
         }
-        setLastMintTimestamp(now); // Update timestamp
-      }
-
+        setLastMintTimestamp(now); // Update timestam
     } catch (error) {
       console.error("Minting error:", error);
-      setStatus("Error occurred during minting.");
+      setStatus("Error occurred during minting."); 
     } finally {
-      setIsMinting(false);
       setLoading(false);
       setWheelEnabled(false);
+      setIsMinting(false); 
     }
   };
 
@@ -287,6 +306,25 @@ const NFT = () => {
     functionName: 'requestId',
     enabled: false,
   });
+
+  useEffect(() => {
+    const fetchInitialRequestId = async () => {
+      try {
+        const result = await refetchRequestId();
+        const latestRequestId = result?.data ? result.data.toString() : null;
+  
+        if (latestRequestId) {
+          setRequestId(latestRequestId);
+          console.log("Initial requestId set: ", latestRequestId);
+        }
+      } catch (error) {
+        console.error("Error fetching initial requestId:", error);
+      }
+    };
+  
+    fetchInitialRequestId(); 
+  }, [refetchRequestId]);
+
 
   //--------------------------------------------------------------------------------
   //Styled Components
@@ -328,7 +366,9 @@ const NFT = () => {
               tabIndex={tabIndex}
               handleTabChange={handleTabChange}
               approveCUSD={approveCUSD}
+              /*isApproved={isApproved}*/
               depositRewardsVault={depositRewardsVault}
+              requestRandomW={requestRandomW}
               mintedNFT={mintedNFT}
               mintedRewards={mintedRewards}
               nftBalance={nftBalance}
