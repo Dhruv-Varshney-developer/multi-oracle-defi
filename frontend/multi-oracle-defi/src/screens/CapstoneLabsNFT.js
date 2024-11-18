@@ -95,7 +95,7 @@ const NFT = () => {
     const reward = rewardInt * 10**18;
     console.log("reward: ", rewardInt);
     try {
-        const result= await depositRewards({
+        await depositRewards({
         address: contractAddress,
         abi: NFTMintingWithVRFABI,
         functionName: 'depositRewardsToVault', 
@@ -238,6 +238,7 @@ const NFT = () => {
     const pollInterval = 1000; // 10 seconds
     let requestIdUpdated = false;
     let tokenMinted = false;
+    let currentRequestId = requestId;
     setLoading(true);
     setIsMinting(true); 
 
@@ -247,7 +248,7 @@ const NFT = () => {
       elapsedTime += pollInterval;
 
       const result = await refetchRequestId();
-      let currentRequestId = result?.data ? result.data.toString() : requestId;
+      currentRequestId = result?.data ? result.data.toString() : requestId;
       console.log("current requestId: ", currentRequestId);
       if (currentRequestId !== requestId) {
         setRequestId(currentRequestId); // Update the requestId state
@@ -265,7 +266,7 @@ const NFT = () => {
           address: contractAddress,
           abi: NFTMintingWithVRFABI,
           functionName: 'mintNFT',
-          args: [requestId], 
+          args: [currentRequestId], 
         });
 
         //Wait to get new NFT minted 
