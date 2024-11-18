@@ -1,87 +1,30 @@
-import { styled } from "@mui/material/styles";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Tab,
-  Tabs,
-  TextField,
-  Button,
-  CircularProgress,
-  Fade,
-  Alert,
-  Link,
-} from "@mui/material";
 import {
   AccountBalanceWallet,
   ArrowUpward,
   ArrowDownward,
   AttachMoney,
   SwapHoriz,
+  ShoppingCart,
 } from "@mui/icons-material";
+
+import {
+  Box,
+  CardContent,
+  Typography,
+  Tab,
+  Tabs,
+  CircularProgress,
+  Fade,
+} from "@mui/material";
+
 import React from "react";
 
-// Previous styled components remain the same
-export const StyledCard = styled(Card)(({ theme }) => ({
-  height: "100%",
-  background: "rgba(0, 0, 0, 0.6)",
-  backdropFilter: "blur(10px)",
-  border: "1px solid rgba(255, 255, 255, 0.1)",
-  borderRadius: theme.spacing(2),
-  transition: "transform 0.2s ease-in-out",
-  "&:hover": {
-    transform: "translateY(-4px)",
-  },
-}));
-
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    color: "white",
-    "& fieldset": {
-      borderColor: "rgba(255, 255, 255, 0.2)",
-    },
-    "&:hover fieldset": {
-      borderColor: "rgba(255, 255, 255, 0.4)",
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: theme.palette.primary.main,
-    },
-  },
-  "& .MuiInputLabel-root": {
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-}));
-
-const StyledButton = styled(Button)(({ theme }) => ({
-  borderRadius: theme.spacing(1),
-  padding: theme.spacing(1.5),
-  textTransform: "none",
-  fontWeight: 600,
-  "&.MuiButton-containedPrimary": {
-    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-    "&:hover": {
-      background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-    },
-  },
-}));
-
-const StyledAlert = styled(Alert)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  backdropFilter: "blur(10px)",
-  background: "rgba(0, 0, 0, 0.4)",
-  color: "white",
-  "& .MuiAlert-icon": {
-    color: "inherit",
-  },
-  "& a": {
-    color: theme.palette.primary.main,
-    textDecoration: "none",
-    "&:hover": {
-      textDecoration: "underline",
-    },
-  },
-}));
+import {
+  StyledCard,
+  StyledTextField,
+  StyledButton,
+  StyledAlert,
+} from "./StyledComponents";
 
 export const ActionPanel = ({
   activeTab,
@@ -91,15 +34,17 @@ export const ActionPanel = ({
   amount,
   setAmount,
   isLoading,
-  error, // From useWriteContract
-  writeTxData, // Transaction hash
+  error,
+  writeTxData,
   isWriteLoading,
   isTxLoading,
+  isSubscribed,
+  optInToNotifications,
+  optOutOfNotifications,
 }) => {
   const renderStatusInfo = () => {
     return (
       <Box sx={{ mt: 2 }}>
-        {/* Error States */}
         {error && (
           <StyledAlert severity="error">
             {error.message.includes("user rejected")
@@ -117,7 +62,11 @@ export const ActionPanel = ({
         <StyledTextField
           fullWidth
           label={`Amount (${
-            activeTab === "borrow" || activeTab === "repay" ? "CUSD" : "ETH"
+            activeTab === "buy"
+              ? "ETH"
+              : activeTab === "borrow" || activeTab === "repay"
+              ? "CUSD"
+              : "ETH"
           })`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -129,7 +78,7 @@ export const ActionPanel = ({
           <StyledButton
             fullWidth
             variant="outlined"
-            onClick={handleApprove}
+            onClick={() => handleApprove(amount)}
             sx={{ mb: 2 }}
             disabled={isWriteLoading || isTxLoading}
           >
@@ -144,15 +93,29 @@ export const ActionPanel = ({
           fullWidth
           variant="contained"
           onClick={() => handleAction(activeTab)}
+          sx={{ mb: 2 }}
           disabled={isWriteLoading || isTxLoading}
         >
           {isWriteLoading || isTxLoading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ${
-              activeTab === "borrow" || activeTab === "repay" ? "CUSD" : "ETH"
+              activeTab === "buy"
+                ? "CUSD with ETH"
+                : activeTab === "borrow" || activeTab === "repay"
+                ? "CUSD"
+                : "ETH"
             }`
           )}
+        </StyledButton>
+        <StyledButton
+          fullWidth
+          variant="contained"
+          onClick={isSubscribed ? optOutOfNotifications : optInToNotifications}
+        >
+          {isSubscribed
+            ? "Opt-out of Notifications"
+            : "Opt-in for Notifications"}
         </StyledButton>
 
         {renderStatusInfo()}
@@ -174,18 +137,58 @@ export const ActionPanel = ({
           onChange={handleTabChange}
           variant="fullWidth"
           sx={{
+            minHeight: "48px",
             "& .MuiTab-root": {
               color: "rgba(255, 255, 255, 0.7)",
+              minHeight: "48px",
+              padding: "6px 8px",
+              minWidth: 0,
               "&.Mui-selected": {
                 color: "primary.main",
               },
+              "& .MuiSvgIcon-root": {
+                fontSize: "1.2rem",
+                marginBottom: "4px",
+              },
+              "& .MuiTab-labelIcon": {
+                fontSize: "0.75rem",
+              },
+            },
+            "& .MuiTabs-flexContainer": {
+              justifyContent: "space-between",
             },
           }}
         >
-          <Tab icon={<ArrowUpward />} label="Deposit" value="deposit" />
-          <Tab icon={<AttachMoney />} label="Borrow" value="borrow" />
-          <Tab icon={<SwapHoriz />} label="Repay" value="repay" />
-          <Tab icon={<ArrowDownward />} label="Withdraw" value="withdraw" />
+          <Tab
+            icon={<ArrowUpward />}
+            label="Deposit"
+            value="deposit"
+            sx={{ flex: 1 }}
+          />
+          <Tab
+            icon={<AttachMoney />}
+            label="Borrow"
+            value="borrow"
+            sx={{ flex: 1 }}
+          />
+          <Tab
+            icon={<SwapHoriz />}
+            label="Repay"
+            value="repay"
+            sx={{ flex: 1 }}
+          />
+          <Tab
+            icon={<ArrowDownward />}
+            label="Withdraw"
+            value="withdraw"
+            sx={{ flex: 1 }}
+          />
+          <Tab
+            icon={<ShoppingCart />}
+            label="Buy"
+            value="buy"
+            sx={{ flex: 1 }}
+          />
         </Tabs>
         <Fade in={true}>{renderContent()}</Fade>
       </CardContent>

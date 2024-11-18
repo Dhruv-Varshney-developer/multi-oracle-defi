@@ -1,140 +1,62 @@
 import React, { useState } from "react";
-import {
-  useAccount,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useBalance,
-} from "wagmi";
-import { parseEther, formatEther } from "viem";
-import { Box, Typography, Container, Grid } from "@mui/material";
+import { Box, Container, Grid } from "@mui/material";
 import { AccountBalance, TrendingUp } from "@mui/icons-material";
-import LendingBorrowingABI from "../utils/LendingBorrowingabi.json";
-import SimpleUSDTokenABI from "../utils/SimpleUSDTokenABI.json";
-
-import { ActionPanel } from "../components/BankComponents";
-import { InfoCard } from "../components/infoCard";
+import { formatEther } from "viem";
+import { ActionPanel } from "../components/ActionPanel";
+import { InfoCard } from "../components/InfoCard";
+import { ProtocolHeader } from "../components/ProtocolHeader";
+import { useContractAddresses } from "../hooks/useContractAddresses";
+import { useProtocolData } from "../hooks/useProtocolData";
+import { useUserData } from "../hooks/useUserData";
+import { useContractActions } from "../hooks/useContractActions";
+import { useChannelSubscription } from "../hooks/useChannelSubscription";
+import { useNotificationStream } from "../hooks/useNotificationStream";
+import NotificationPanel from "../components/NotificationPanel";
 
 const LendingBorrowing = () => {
-  const { address } = useAccount();
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
 
-  // Contract addresses
-  const lendingContractAddress = "0xE18C1Bc5316e8590A93fC9dD8A338A0019068075";
-  const CUSDContractAddress = "0xdCe92E3F9Bd38776cfaEF9d7B6fA551f274D9323";
-
-  // Contract reads
-  const { data: ethPrice } = useReadContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "getLatestPrice",
-  });
-
-  const { data: maxBorrow } = useReadContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "getMaxBorrowAmount",
-    account: address,
-  });
-
-  const { data: userData } = useReadContract({
-    address: lendingContractAddress,
-    abi: LendingBorrowingABI,
-    functionName: "users",
-    args: [address],
-  });
-
-  const { data: contractCUSDBalance } = useReadContract({
-    address: CUSDContractAddress,
-    abi: SimpleUSDTokenABI,
-    functionName: "balanceOf",
-    args: [lendingContractAddress],
-  });
-
-  const { data: userCUSDBalance } = useReadContract({
-    address: CUSDContractAddress,
-    abi: SimpleUSDTokenABI,
-    functionName: "balanceOf",
-    args: [address],
-  });
-
-  const { data: contractETHBalance } = useBalance({
-    address: lendingContractAddress,
-  });
-
-  // Contract writes
+  const { lendingContractAddress, CUSDContractAddress } =
+    useContractAddresses();
   const {
-    writeContract,
-    data: writeTxData,
-    isLoading: isWriteLoading,
-    error,
-  } = useWriteContract();
+    ethPrice,
+    contractCUSDBalance,
+    contractETHBalance,
+    collateralFactor,
+    interestRate,
+    divideFactor,
+  } = useProtocolData(lendingContractAddress, CUSDContractAddress);
 
-  // Transaction receipts
-  const { isLoading: isTxLoading } = useWaitForTransactionReceipt({
-    hash: writeTxData?.hash,
-  });
+  const { maxBorrow, userData, userCUSDBalance, repaymentAmount } = useUserData(
+    lendingContractAddress,
+    CUSDContractAddress
+  );
+  const {
+    handleAction,
+    handleApprove,
+    writeTxData,
+    isWriteLoading,
+    isTxLoading,
+    error,
+  } = useContractActions(lendingContractAddress, CUSDContractAddress);
+
+  const { isSubscribed, subscribe, unsubscribe } = useChannelSubscription();
+  const { notificationState, initializeStream, closeNotification } =
+    useNotificationStream();
+
+  const handleOptIn = async () => {
+    try {
+      await subscribe();
+      await initializeStream();
+    } catch (error) {
+      console.error("Error during opt-in:", error);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
     setAmount("");
-  };
-
-  const handleAction = async (action) => {
-    if (!amount) return;
-
-    try {
-      switch (action) {
-        case "borrow":
-          await writeContract({
-            address: lendingContractAddress,
-            abi: LendingBorrowingABI,
-            functionName: "borrow",
-            args: [amount],
-          });
-          break;
-        case "repay":
-          await writeContract({
-            address: lendingContractAddress,
-            abi: LendingBorrowingABI,
-            functionName: "repay",
-            args: [amount],
-          });
-          break;
-        case "withdraw":
-          await writeContract({
-            address: lendingContractAddress,
-            abi: LendingBorrowingABI,
-            functionName: "withdrawCollateral",
-            args: [parseEther(amount)],
-          });
-          break;
-        default:
-          await writeContract({
-            address: lendingContractAddress,
-            abi: LendingBorrowingABI,
-            functionName: "depositCollateral",
-            value: parseEther(amount),
-          });
-          break;
-      }
-    } catch (error) {
-      console.error(`${action} error:`, error);
-    }
-  };
-
-  const handleApprove = async () => {
-    try {
-      await writeContract({
-        address: CUSDContractAddress,
-        abi: SimpleUSDTokenABI,
-        functionName: "approve",
-        args: [lendingContractAddress, 1000000],
-      });
-    } catch (error) {
-      console.error("Approve error:", error);
-    }
   };
 
   return (
@@ -146,17 +68,9 @@ const LendingBorrowing = () => {
       }}
     >
       <Container maxWidth="xl">
-        <Box textAlign="center" mb={6}>
-          <Typography variant="h3" component="h1" color="white" gutterBottom>
-            Lending & Borrowing Protocol
-          </Typography>
-          <Typography variant="h6" color="rgba(255, 255, 255, 0.7)">
-            Deposit ETH, Borrow CUSD, and more!
-          </Typography>
-        </Box>
+        <ProtocolHeader />
 
         <Grid container spacing={4}>
-          {/* Protocol Info Card */}
           <Grid item xs={12} md={4}>
             <InfoCard
               title="Protocol Stats"
@@ -172,24 +86,38 @@ const LendingBorrowing = () => {
                   label: "Protocol ETH Balance",
                   value: contractETHBalance
                     ? `${Number(formatEther(contractETHBalance.value))} ETH`
-                    : "Loading...",
+                    : "0 ETH",
                 },
                 {
                   label: "Protocol CUSD Balance",
                   value: contractCUSDBalance
                     ? `${Number(formatEther(contractCUSDBalance))} CUSD`
+                    : "0 CUSD",
+                },
+                {
+                  label: "Collateral Factor",
+                  value: collateralFactor
+                    ? `${Number(collateralFactor)}%`
                     : "Loading...",
+                },
+                {
+                  label: "Interest Rate",
+                  value:
+                    interestRate && divideFactor
+                      ? `${
+                          Number(interestRate) / Number(divideFactor)
+                        }% per minute`
+                      : "Loading...",
                 },
               ]}
             />
           </Grid>
 
-          {/* Action Card */}
           <Grid item xs={12} md={4}>
             <ActionPanel
               activeTab={activeTab}
               handleTabChange={handleTabChange}
-              handleAction={handleAction}
+              handleAction={(action) => handleAction(action, amount)}
               handleApprove={handleApprove}
               amount={amount}
               setAmount={setAmount}
@@ -198,10 +126,12 @@ const LendingBorrowing = () => {
               writeTxData={writeTxData}
               isWriteLoading={isWriteLoading}
               isTxLoading={isTxLoading}
+              isSubscribed={isSubscribed}
+              optInToNotifications={handleOptIn}
+              optOutOfNotifications={unsubscribe}
             />
           </Grid>
 
-          {/* User Info Card */}
           <Grid item xs={12} md={4}>
             <InfoCard
               title="Your Position"
@@ -220,20 +150,29 @@ const LendingBorrowing = () => {
                     : "0 CUSD",
                 },
                 {
-                  label: "Borrowed Amount",
-                  value: userData ? `${Number(userData[1])} CUSD` : "0 CUSD",
+                  label: "Repayment Amount",
+                  value: repaymentAmount
+                    ? `${Number(repaymentAmount)} CUSD`
+                    : "0 CUSD",
                 },
                 {
                   label: "Max Borrowable CUSD",
-                  value: maxBorrow
-                    ? `${Number(maxBorrow)} CUSD`
-                    : "Fetching data...",
+                  value: maxBorrow ? `${Number(maxBorrow)} CUSD` : "0 CUSD",
                 },
               ]}
             />
           </Grid>
         </Grid>
       </Container>
+
+      <NotificationPanel
+        isOpen={notificationState.isOpen}
+        title={notificationState.title}
+        body={notificationState.body}
+        app={notificationState.app}
+        icon={notificationState.icon}
+        onClose={closeNotification}
+      />
     </Box>
   );
 };
