@@ -12,7 +12,7 @@ import NftCard from '../components/nftCard';
 import SimpleWheel from '../components/SimpleWheel';
 //Contract addresses
 const cUSDAddress = '0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A';
-const contractAddress = '0x15d96e80a5da126a8359a2efa6de9a62e6f1feeb';
+const contractAddress = '0x9044B578C1F2F3E9cb3e478FdfB39A75fE2f1997';
 const vaultAddress = '0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5';
 
 const NFT = () => {
@@ -71,13 +71,13 @@ const NFT = () => {
     console.log("reward: ", rewardInt);
     try {
         const result= await depositRewards({
-        address: vaultAddress,
-        abi: VaultABI,
-        functionName: 'depositRewards', 
+        address: contractAddress,
+        abi: NFTMintingWithVRFABI,
+        functionName: 'depositRewardsToVault', 
         args: [reward, connectedAccount.address],
       });
 
-/*     if(result){
+     if(result){
         console.log("Deposit successful, return: ", result.toString());
         setProgressMessage("Reward transferred to Vault.");
         setMintedRewards(0);
@@ -86,7 +86,7 @@ const NFT = () => {
         console.error("No reward to transfer");
         setProgressMessage("Error transferring reward.");
         markRewardAsDepositedFrontend(connectedAccount.address, currentNFTIndex, false);
-      }*/
+      }
 
     } catch (error) {
       console.error("Vault transfer error:", error);

@@ -8,6 +8,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 import "@openzeppelin/contracts/utils/Base64.sol";
 
+interface IVault {
+    function depositRewards(uint256 assets, address receiver) external returns (uint256);
+}
+
 contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     using VRFV2PlusClient for VRFV2PlusClient.RandomWordsRequest;
     using Strings for uint256;
@@ -30,6 +34,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     IERC20 public immutable cUSD;
     uint256 public constant cUSDAmount = 5 * 10 ** 18; // 5 tokens in 18 decimal format
     address public constant cUSDAddress = 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A; //CapstoneUSD token 
+    address public vaultAddress = 0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5; //vault address
 
      // Base URL for images
     string private constant baseImageURL = "https://tomato-genuine-parrot-12.mypinata.cloud/ipfs/QmXiSniGSGi92ETvdCMEbgXQJc2q4p5JYUwQ6SsJgpH4yP/";
@@ -63,7 +68,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     event RequestSent(uint256 requestId, uint32 numWords);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
     event NFTMinted(uint256 tokenId, address owner);
-    event Debug(string message); 
+    event RewardsDeposited(uint256 assets, address receiver);
 
     constructor() ERC721("CapstoneLabsNFT", "CLN") VRFConsumerBaseV2Plus(0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B) {
         subscriptionId = 71464033757340969494714285700721349424487006043208639418341710426840418521506;
@@ -78,13 +83,10 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     }
 
     function requestRandomWords() public canMint {
-        emit Debug("Check allowance");
         // Check if user has approved enough tokens for the contract to transfer
         require(cUSD.allowance(msg.sender, address(this)) >= cUSDAmount, "Insufficient token allowance.");
-        emit Debug("Before token transfer");
         // Transfer the payment amount from the user to this contract
         require(cUSD.transferFrom(msg.sender, address(this), cUSDAmount), "Token transfer failed.");
-        emit Debug("After token transfer");
         requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: keyHash,
@@ -155,5 +157,11 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         request.fulfilled = true;
         request.randomWords = _randomWords;
         emit RequestFulfilled(_requestId, _randomWords);
+    }
+
+        function depositRewardsToVault(uint256 reward, address receiver) public {
+        require(vaultAddress != address(0), "Vault address not set");
+        IVault(vaultAddress).depositRewards(reward, receiver);
+        emit RewardsDeposited(reward, receiver);
     }
 }
