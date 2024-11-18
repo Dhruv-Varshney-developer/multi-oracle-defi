@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ConnectKitButton } from "connectkit";
-
-import { useAccount } from 'wagmi';
-import LendingBorrowing from './screens/LendingBorrowing';
+import { useAccount } from "wagmi";
+import LendingBorrowing from "./screens/LendingBorrowing";
 import Vault from './screens/Vault';
-import NFT from './screens/nft';
-import CLogo from './assets/CLogo.png';
-
+import NFT from "./screens/CapstoneLabsNFT";
+import CLogo from "./assets/CLogo.png";
 
 const App = () => {
   const { isConnected } = useAccount();
