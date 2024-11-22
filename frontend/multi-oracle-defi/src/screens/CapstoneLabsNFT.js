@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { Container, Typography, Grid2 as Grid, Snackbar, Alert} from "@mui/material";
 import { motion } from "framer-motion";
 //ABI
-import CUSDABI from "../utils/SimpleUSDTokenABI.json";
+import CUSDABI from "../utils/CUSDabi.json";
 import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json";
 import VaultABI from "../utils/Vaultabi.json";
 //Components
