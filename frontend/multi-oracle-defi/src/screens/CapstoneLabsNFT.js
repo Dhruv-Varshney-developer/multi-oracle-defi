@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 //ABI
 import CUSDABI from "../utils/CUSDabi.json";
 import NFTMintingWithVRFABI from "../utils/CapstoneLabsNFTmintingAbi.json";
-import VaultABI from "../utils/Vaultabi.json";
 //Components
 import NftCard from '../components/nftCard'; 
 import SimpleWheel from '../components/SimpleWheel';
@@ -31,7 +30,6 @@ const NFT = () => {
   const [progressMessage, setProgressMessage] = useState(null);
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
   const [depositedRewardsMapping, setDepositedRewardsMapping] = useState({});
-  /*const [isApproved, setIsApproved] = useState(false);*/
 
   const connectedAccount = useAccount();
 
@@ -51,8 +49,6 @@ const NFT = () => {
         args: [contractAddress, ethers.utils.parseUnits("5", 18)],
       });
       
-      /*await checkApproval();
-      setIsApproved(true);*/
       setShowNFTCard(false);
     } catch (error) {
       console.error("Approval error:", error);
@@ -61,39 +57,29 @@ const NFT = () => {
     setLoading(false);
   };
 
-  const { refetch: refetchApproval } = useReadContract({
-    address: cUSDAddress,
-    abi: CUSDABI,
-    functionName: 'allowance',
-    args: [connectedAccount.address, contractAddress],
-  });
-
-  /*const checkApproval = async () => {
-    try {
-      const allowance = await refetchApproval();
-      console.log("Allowance: ", allowance.data);
-      const allowanceInCUSD = parseFloat(ethers.utils.formatUnits(allowance.data, 18));
-      setIsApproved(allowanceInCUSD >= 5); 
-    } catch (error) {
-      console.error("Error checking approval:", error);
-      setIsApproved(false);
-    }
-  };
-
-  useEffect(() => {
-    if (connectedAccount.address) {
-      checkApproval();
-    }
-  }, [connectedAccount.address]);*/
   //------------------------------------------------------------------------------------------
   // Setting rewards - deposit to vault
   const { writeContract:depositRewards } = useWriteContract();
   const depositRewardsVault = async () => {
-
-    setLoading(true);
     const rewardInt = Math.floor(Number(mintedNFT.reward)/10);
     const reward = rewardInt * 10**18;
     console.log("reward: ", rewardInt);
+
+    //Approve
+    try {
+      await writeCUSD({
+        address: cUSDAddress,
+        abi: CUSDABI,
+        functionName: 'approve',
+        args: [vaultAddress, reward],
+      });
+    }catch (error) {
+      console.error("Vault transfer error:", error);
+    }
+
+    setLoading(true);
+
+    //Deposit
     try {
         await depositRewards({
         address: contractAddress,
@@ -199,10 +185,9 @@ const NFT = () => {
 
 
   //------------------------------------------------------------------------------------------
-  // Handle the request for random words and mintNFT 
+  // Handle the request for random words, read the requestId and mintNFT 
   const { writeContract } = useWriteContract();
 
-  //------------------------------------------------------------------------------------------
   // Request random words
   const requestRandomW = async ()=>{
     try {
@@ -213,6 +198,7 @@ const NFT = () => {
         functionName: 'requestRandomWords',
       });
       setWheelEnabled(true);
+
     }
     catch(error){
       console.error("Error requesting random words:", error);
@@ -233,12 +219,13 @@ const NFT = () => {
     const balance = await refetchBalance();
     const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
 
-    console.log("initial requestId: ", requestId);
+
     let elapsedTime = 0;
     const pollInterval = 1000; // 10 seconds
     let requestIdUpdated = false;
     let tokenMinted = false;
     let currentRequestId = requestId;
+    console.log("init requestId: ", requestId);
     setLoading(true);
     setIsMinting(true); 
 
@@ -250,9 +237,10 @@ const NFT = () => {
       const result = await refetchRequestId();
       currentRequestId = result?.data ? result.data.toString() : requestId;
       console.log("current requestId: ", currentRequestId);
+
       if (currentRequestId !== requestId) {
-        setRequestId(currentRequestId); // Update the requestId state
         requestIdUpdated = true;
+        setRequestId(currentRequestId);     
         break;
       }
     }
@@ -299,33 +287,12 @@ const NFT = () => {
     }
   };
 
-  //------------------------------------------------------------------------------------------
   // Read the requestId 
   const { refetch: refetchRequestId } = useReadContract({
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
     functionName: 'requestId',
-    enabled: false,
   });
-
-  useEffect(() => {
-    const fetchInitialRequestId = async () => {
-      try {
-        const result = await refetchRequestId();
-        const latestRequestId = result?.data ? result.data.toString() : null;
-  
-        if (latestRequestId) {
-          setRequestId(latestRequestId);
-          console.log("Initial requestId set: ", latestRequestId);
-        }
-      } catch (error) {
-        console.error("Error fetching initial requestId:", error);
-      }
-    };
-  
-    fetchInitialRequestId(); 
-  }, [refetchRequestId]);
-
 
   //--------------------------------------------------------------------------------
   //Styled Components
@@ -367,7 +334,6 @@ const NFT = () => {
               tabIndex={tabIndex}
               handleTabChange={handleTabChange}
               approveCUSD={approveCUSD}
-              /*isApproved={isApproved}*/
               depositRewardsVault={depositRewardsVault}
               requestRandomW={requestRandomW}
               mintedNFT={mintedNFT}
