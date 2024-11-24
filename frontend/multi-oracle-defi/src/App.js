@@ -64,9 +64,7 @@ const App = () => {
           </>
         )}
       </div>
-
       {isConnected && <VaultTrackerBalance />}
-
       {/* Tabs */}
       {isConnected && (
         <div

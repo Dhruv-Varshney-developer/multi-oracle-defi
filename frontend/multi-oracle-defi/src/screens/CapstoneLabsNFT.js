@@ -46,7 +46,7 @@ const NFT = () => {
         address: cUSDAddress,
         abi: CUSDABI,
         functionName: 'approve',
-        args: [contractAddress, ethers.utils.parseUnits("5", 18)],
+        args: [contractAddress, ethers.utils.parseUnits("5.5", 18)],
       });
       
       setShowNFTCard(false);
@@ -66,7 +66,7 @@ const NFT = () => {
     console.log("reward: ", rewardInt);
 
     //Approve
-    try {
+    /*try {
       await writeCUSD({
         address: cUSDAddress,
         abi: CUSDABI,
@@ -75,7 +75,7 @@ const NFT = () => {
       });
     }catch (error) {
       console.error("Vault transfer error:", error);
-    }
+    }*/
 
     setLoading(true);
 
@@ -131,20 +131,24 @@ const NFT = () => {
     address: contractAddress,
     abi: NFTMintingWithVRFABI,
     functionName: 'balanceOf',
-    args: [connectedAccount.address], // Connected account address
-    enabled: false, 
+    args: [connectedAccount.address]
   });
 
-  const checkNftBalance = async () => {
-    try {
+  useEffect(() => {
+    const interval = setInterval(async () => {
       const result = await refetchBalance();
-      setNftBalance(result.data.toString());
-      setStatus(`You own ${result.data.toString()} NFTs.`);
-    } catch (err) {
-      console.error("Error fetching balance:", err);
-      setStatus('Error fetching balance.');
-    }
-  };
+      const balance =  result?.data?.toNumber ? result.data.toNumber() : parseInt(result.data);
+  
+      // Update balance only if it has changed
+      if (balance !== nftBalance) {
+        setNftBalance(balance);
+        setCurrentNFTIndex(balance - 1); 
+        await viewNFTById(balance - 1);
+      }
+    }, 5000); 
+    return () => clearInterval(interval);
+  }, [nftBalance, refetchBalance]);
+
   // ------------------------------------------------------------------------------------------
   // View NFT by Token ID
   const { refetch: refetchNFTDetails } = useReadContract({
@@ -175,14 +179,6 @@ const NFT = () => {
       console.error("Error fetching NFT details:", error);
     }
   };
-
-  useEffect(() => {
-    checkNftBalance();
-    if (tabIndex === 2 && nftBalance > 0) {
-      viewNFTById(nftBalance - 1);
-    }
-  }, [tabIndex, nftBalance]);
-
 
   //------------------------------------------------------------------------------------------
   // Handle the request for random words, read the requestId and mintNFT 
@@ -218,7 +214,7 @@ const NFT = () => {
     // Poll for requestId change (up to 100 seconds)
     const balance = await refetchBalance();
     const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
-
+    console.log("init nft count: ", nftCount);
 
     let elapsedTime = 0;
     const pollInterval = 1000; // 10 seconds
@@ -256,35 +252,32 @@ const NFT = () => {
           functionName: 'mintNFT',
           args: [currentRequestId], 
         });
-
-        //Wait to get new NFT minted 
-        elapsedTime = 0;
-        while (elapsedTime < 100000 && !tokenMinted) {
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
-          elapsedTime += pollInterval;
-
-          let currentBalance = await refetchBalance();
-          let currentNftCount = currentBalance?.data?.toNumber ? currentBalance.data.toNumber() : parseInt(currentBalance.data); 
-          if (currentNftCount > nftCount) {
-            tokenMinted = true;
-            setCurrentNFTIndex(currentNftCount - 1);
-            await viewNFTById(currentNftCount - 1);
-            break;
-          }
-        }
-
-        if (!tokenMinted) {
-          throw new Error("Minting timeout: No new tokenId received.");
-        }
-        setLastMintTimestamp(now); // Update timestam
-    } catch (error) {
+    }catch (error) {
       console.error("Minting error:", error);
       setStatus("Error occurred during minting."); 
-    } finally {
-      setLoading(false);
-      setWheelEnabled(false);
-      setIsMinting(false); 
     }
+
+    //Wait to get new NFT minted 
+    elapsedTime = 0;
+    while (elapsedTime < 100000 && !tokenMinted) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      elapsedTime += pollInterval;
+
+      let currentBalance = await refetchBalance();
+      console.log("minted nft count: ", currentBalance); 
+
+      if (currentBalance > nftCount) {
+        tokenMinted = true;
+        console.log("updating minted nft count: ", currentBalance);
+        setCurrentNFTIndex(currentBalance - 1);
+        await viewNFTById(currentBalance - 1);
+        setLastMintTimestamp(now);
+      }
+    }
+
+    setLoading(false);
+    setWheelEnabled(false);
+    setIsMinting(false); 
   };
 
   // Read the requestId 

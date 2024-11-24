@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { useReadContract, useWriteContract, useAccount } from 'wagmi';
+import { useReadContract} from 'wagmi';
 import NotificationPanel from "./NotificationPanel";
 import VaultBalanceTrackerABI from "../utils/VaultBalanceTrackerabi.json"; 
 
@@ -14,14 +14,7 @@ const VaultTrackerBalance = () => {
     abi: VaultBalanceTrackerABI,
     functionName: "lastVaultBalance",
   });
-
-  const [notification, setNotification] = useState({
-    isOpen: false,
-    title: "",
-    body: "",
-    app: "Vault Tracker",
-  });
-
+  
   useEffect(() => {
     if (lastVaultBalance) {
       const formattedBalance = ethers.utils.formatUnits(lastVaultBalance, 18);
@@ -34,6 +27,14 @@ const VaultTrackerBalance = () => {
       });
     }
   }, [lastVaultBalance]);
+  
+
+  const [notification, setNotification] = useState({
+    isOpen: false,
+    title: "",
+    body: "",
+    app: "Vault Tracker",
+  });
 
   return (
     <div>
