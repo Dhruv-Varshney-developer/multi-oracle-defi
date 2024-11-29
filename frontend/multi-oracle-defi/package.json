@@ -8,6 +8,7 @@
     "@emotion/styled": "^11.13.0",
     "@heroicons/react": "^2.1.5",
     "@livekit/components-react": "^2.6.7",
+    "@metamask/sdk": "0.30.0",
     "@mui/icons-material": "^6.1.5",
     "@mui/material": "^6.1.5",
     "@pushprotocol/restapi": "^1.7.29",
@@ -70,5 +71,9 @@
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "crypto-browserify": "^3.12.1",
     "os-browserify": "^0.3.0"
-  }
+  },
+  "resolutions": {
+    "@metamask/sdk": "0.30.0"
+  },
+  "proxy": "https://1rpc.io/sepolia"
 }

@@ -8,7 +8,7 @@ export const config = createConfig(
   getDefaultConfig({
     chains: [sepolia],
     transports: {
-      [sepolia.id]: http(`https://rpc.sepolia.org`),
+      [sepolia.id]: http(`https://1rpc.io/sepolia`),
     },
     walletConnectProjectId: "af699c419e11d1dbc5cb8c53fb279dee",
     appName: "Oracle",
@@ -25,4 +25,4 @@ export const Web3Provider = ({ children }) => {
       </QueryClientProvider>
     </WagmiProvider>
   );
-};
+}

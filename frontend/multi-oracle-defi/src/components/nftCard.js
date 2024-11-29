@@ -33,7 +33,8 @@ const NftCard = ({
   isRewardDeposited,
   connectedAccount,
   progressMessage,
-  /*isApproved,*/
+  isApproved,
+  setIsApproved
 }) => (
   <StyledCard>
     <CardContent>
@@ -78,16 +79,24 @@ const NftCard = ({
       )}
       {tabIndex === 1 && (
         <Box mt={15}>
-          <Typography variant="body2">Approve spending 5 CUSD</Typography>
-          <StyledButton onClick={approveCUSD}>
-            Approve 5 CUSD
-          </StyledButton>
-          <Typography variant="body2" sx={{ marginTop: "1rem" }}>
-            
-          </Typography>
-          <StyledButton onClick={requestRandomW}>
-          ⭐Try Your Luck!
-          </StyledButton>
+          {!isApproved ? (
+            <>
+              <Typography variant="body2">Approve spending 5 CUSD</Typography>
+              <StyledButton onClick={async () => {
+                await approveCUSD(); // Llama a la función de aprobación
+                setIsApproved(true); // Marca como aprobado después de completar
+              }}>
+                Approve 5 CUSD
+              </StyledButton>
+            </>
+          ) : (
+            <>
+              <Typography variant="body2">You can now try your luck!</Typography>
+              <StyledButton onClick={requestRandomW}>
+                ⭐ Try Your Luck!
+              </StyledButton>
+            </>
+          )}
         </Box>
       )}
       {tabIndex === 2 && (

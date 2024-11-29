@@ -29,6 +29,7 @@ const NFT = () => {
   const [openAlert, setOpenAlert] = useState(false);
   const [progressMessage, setProgressMessage] = useState(null);
   const [currentNFTIndex, setCurrentNFTIndex] = useState(0);
+  const [isApproved, setIsApproved] = useState(false);
   const [depositedRewardsMapping, setDepositedRewardsMapping] = useState({});
 
   const connectedAccount = useAccount();
@@ -48,7 +49,7 @@ const NFT = () => {
         functionName: 'approve',
         args: [contractAddress, ethers.utils.parseUnits("5.5", 18)],
       });
-      
+
       setShowNFTCard(false);
     } catch (error) {
       console.error("Approval error:", error);
@@ -128,26 +129,47 @@ const NFT = () => {
   // ------------------------------------------------------------------------------------------
   // Check NFT Balance
   const { refetch: refetchBalance } = useReadContract({
-    address: contractAddress,
-    abi: NFTMintingWithVRFABI,
-    functionName: 'balanceOf',
-    args: [connectedAccount.address]
-  });
+        address: contractAddress,
+        abi: NFTMintingWithVRFABI,
+        functionName: 'balanceOf',
+        args: [connectedAccount.address],
+    });
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const result = await refetchBalance();
-      const balance =  result?.data?.toNumber ? result.data.toNumber() : parseInt(result.data);
-  
-      // Update balance only if it has changed
-      if (balance !== nftBalance) {
-        setNftBalance(balance);
-        setCurrentNFTIndex(balance - 1); 
-        await viewNFTById(balance - 1);
+    /*const provider = new ethers.providers.JsonRpcProvider("/");
+    const getNftBalance = async () => {
+      try {
+        if (!connectedAccount.address) {
+          console.error("No connected account found.");
+          return 0;
+        }
+    
+        const contract = new ethers.Contract(contractAddress, NFTMintingWithVRFABI, provider);
+        const balance = await contract.balanceOf(connectedAccount.address);
+        console.log("NFT Balance:", balance.toString());
+        return parseInt(balance.toString(), 10); // Convierte el balance a un número
+      } catch (error) {
+        console.error("Error fetching NFT balance:", error);
+        return 0; // Devuelve 0 si hay un error
       }
-    }, 5000); 
-    return () => clearInterval(interval);
-  }, [nftBalance, refetchBalance]);
+    };*/
+
+    const checkNftBalance = async () => {    
+      try {
+        const result = await refetchBalance();
+        const balance = parseInt(result.data.toString(), 10);
+    
+        if (balance !== nftBalance) {
+          setNftBalance(balance);
+          setStatus(`You own ${balance} NFTs.`);
+        }
+    
+        return balance;
+      } catch (err) {
+        console.error("Error fetching balance:", err);
+        setStatus('Error fetching balance.');
+        return 0;
+      }
+    };
 
   // ------------------------------------------------------------------------------------------
   // View NFT by Token ID
@@ -156,8 +178,8 @@ const NFT = () => {
     abi: NFTMintingWithVRFABI,
     functionName: 'capstoneLabsNFT',
     args: [currentNFTIndex],
-    enabled: false,
   });
+
   const viewNFTById = async (tokenId) => {
     try {
       const result = await refetchNFTDetails({ args: [tokenId] });
@@ -212,9 +234,8 @@ const NFT = () => {
     }
 
     // Poll for requestId change (up to 100 seconds)
-    const balance = await refetchBalance();
-    const nftCount = balance?.data?.toNumber ? balance.data.toNumber() : parseInt(balance.data);
-    console.log("init nft count: ", nftCount);
+    const balance = await checkNftBalance();
+    console.log("init nft count: ", balance);
 
     let elapsedTime = 0;
     const pollInterval = 1000; // 10 seconds
@@ -224,6 +245,7 @@ const NFT = () => {
     console.log("init requestId: ", requestId);
     setLoading(true);
     setIsMinting(true); 
+    setIsApproved(false);
 
     //Wait to get requestId back
     while (elapsedTime < 10000 && !requestIdUpdated) {
@@ -263,18 +285,16 @@ const NFT = () => {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       elapsedTime += pollInterval;
 
-      let currentBalance = await refetchBalance();
-      console.log("minted nft count: ", currentBalance); 
-
-      if (currentBalance > nftCount) {
+      let currentBalance = await checkNftBalance();
+      if (currentBalance > balance) {
         tokenMinted = true;
-        console.log("updating minted nft count: ", currentBalance);
-        setCurrentNFTIndex(currentBalance - 1);
-        await viewNFTById(currentBalance - 1);
-        setLastMintTimestamp(now);
+        break;
       }
+      setCurrentNFTIndex(currentBalance - 1);
+      await viewNFTById(currentBalance - 1);
     }
 
+    setLastMintTimestamp(now);
     setLoading(false);
     setWheelEnabled(false);
     setIsMinting(false); 
@@ -336,6 +356,8 @@ const NFT = () => {
               isRewardDeposited={isRewardDeposited}
               connectedAccount={connectedAccount}
               progressMessage={progressMessage}
+              isApproved={isApproved} 
+              setIsApproved={setIsApproved}
             />
           </motion.div>
         </Grid>
