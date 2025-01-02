@@ -29,9 +29,9 @@ const Vault = () => {
 
   //---------------------------------------------------------------------------------------
   //Contract Addresses
-  const VaultContractAddress = "0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5";
+  const VaultContractAddress = "0x367a68d69825b0A2A56C3F97B2eFf2942d2B1032";
   const CUSDContractAddress = "0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A";
-  const forwarderAddress = "0x86048a5FEb6DCC60c487667BD93955A6E6916d36";
+  const forwarderAddress = "0xE58622f0719A2dDf7058Cc1736052Ef12154B655";
 
   //---------------------------------------------------------------------------------------
   //Contract Reads
@@ -221,7 +221,7 @@ const Vault = () => {
           color="rgba(255, 255, 255, 0.7)"
           style={{ cursor: 'pointer' }}
           onClick={handleCopy}>
-            0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5
+            0x367a68d69825b0A2A56C3F97B2eFf2942d2B1032
           </Typography>
           <Snackbar
           open={open}
