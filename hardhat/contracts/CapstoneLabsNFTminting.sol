@@ -25,6 +25,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
 
     uint256 public tokenCounter;
     mapping(uint256 => CapstoneLabsNFT) public capstoneLabsNFT;
+    mapping(address => uint256) public lastMintedTokenId;
     mapping(uint256 => RequestStatus) public s_requests;
     mapping(address => uint256) public lastMintTime;
 
@@ -34,7 +35,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     IERC20 public immutable cUSD;
     uint256 public constant cUSDAmount = 5 * 10 ** 18; // 5 tokens in 18 decimal format
     address public constant cUSDAddress = 0x3d24dA1CB3C58C10DBF2Df035B3577624a88E63A; //CapstoneUSD token 
-    address public vaultAddress = 0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5; //vault address
+    address public vaultAddress = 0x367a68d69825b0A2A56C3F97B2eFf2942d2B1032; //vault address
 
      // Base URL for images
     string private constant baseImageURL = "https://tomato-genuine-parrot-12.mypinata.cloud/ipfs/QmXiSniGSGi92ETvdCMEbgXQJc2q4p5JYUwQ6SsJgpH4yP/";
@@ -70,7 +71,7 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
     event NFTMinted(uint256 tokenId, address owner);
     event RewardsDeposited(uint256 assets, address receiver);
 
-    constructor() ERC721("CapstoneLabsNFT", "CLN") VRFConsumerBaseV2Plus(0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B) {
+    constructor() ERC721("CapstoneLabs", "CLNFT") VRFConsumerBaseV2Plus(0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B) {
         subscriptionId = 71464033757340969494714285700721349424487006043208639418341710426840418521506;
         keyHash = 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
         tokenCounter = 0;
@@ -146,9 +147,17 @@ contract NFTMintingWithVRF is VRFConsumerBaseV2Plus, ERC721URIStorage {
         _safeMint(msg.sender, tokenCounter);
         _setTokenURI(tokenCounter, getTokenURI(request.randomWords));
         emit NFTMinted(tokenCounter, msg.sender);
-        
+        lastMintedTokenId[msg.sender] = tokenCounter;
         tokenCounter++;
         lastMintTime[msg.sender] = block.timestamp;
+    }
+
+    function getLastMintedNFT(address user) public view returns (uint256, string memory, string memory) {
+        uint256 tokenId = lastMintedTokenId[user];
+        require(tokenId < tokenCounter && ownerOf(tokenId)== user, "User has not minted any NFT yet.");
+        
+        CapstoneLabsNFT memory nft = capstoneLabsNFT[tokenId];
+        return (nft.reward, nft.name, nft.image);
     }
 
     function fulfillRandomWords(uint256 _requestId, uint256[] calldata _randomWords) internal override {
