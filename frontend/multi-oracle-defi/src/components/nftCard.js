@@ -24,6 +24,7 @@ const NftCard = ({
   tabIndex,
   handleTabChange,
   approveCUSD,
+  approveCUSDForDeposit,
   depositRewardsVault,
   requestRandomW,
   mintedNFT,
@@ -32,6 +33,8 @@ const NftCard = ({
   progressMessage,
   isApproved,
   setIsApproved,
+  isApprovedForDeposit,
+  setIsApprovedForDeposit,
   fetchLastMintedNFT
 }) => (
   <StyledCard>
@@ -51,8 +54,8 @@ const NftCard = ({
             <>
               <Typography variant="body2">Approve spending 5 CUSD</Typography>
               <StyledButton onClick={async () => {
-                await approveCUSD(); // Llama a la función de aprobación
-                setIsApproved(true); // Marca como aprobado después de completar
+                await approveCUSD(); 
+                setIsApproved(true); 
               }}>
                 Approve 5 CUSD
               </StyledButton>
@@ -100,15 +103,29 @@ const NftCard = ({
       )}
 
       {tabIndex === 2 && (
-        <Box mt={15}>
-          {mintedNFT ? (
+        <Box mt={2} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+          {mintedNFT ? (        
             <>
-              <Typography variant="body2">
-                Deposit {Math.floor(mintedNFT.reward / 10)} CUSD rewards to Vault
+              <Typography variant="body2" textAlign="center" alignItems="center" >
+                Approve {Math.floor(mintedNFT.reward / 10)} CUSD rewards for deposit.
               </Typography>
+
               <StyledButton
-                onClick={depositRewardsVault}
-                disabled={!mintedNFT || mintedNFT.reward === 0}
+                onClick={async () => {
+                  await approveCUSDForDeposit();
+                  setIsApproved(true);
+                }}
+                sx={{ marginBottom: 1}}
+                disabled={isApprovedForDeposit}
+              >
+                Approve for Deposit
+              </StyledButton>
+
+              <StyledButton
+                onClick={async () => {
+                  depositRewardsVault();
+                }}
+                disabled={!isApprovedForDeposit || !mintedNFT }
               >
                 Deposit Rewards
               </StyledButton>

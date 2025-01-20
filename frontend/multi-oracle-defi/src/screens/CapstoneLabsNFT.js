@@ -27,6 +27,7 @@ const NFT = () => {
   const [openAlert, setOpenAlert] = useState(false);
   const [progressMessage, setProgressMessage] = useState(null);
   const [isApproved, setIsApproved] = useState(false);
+  const [isApprovedForDeposit, setIsApprovedForDeposit] = useState(false);
 
   const connectedAccount = useAccount();
 
@@ -57,25 +58,36 @@ const NFT = () => {
   //------------------------------------------------------------------------------------------
   // Setting rewards - deposit to vault
   const { writeContract:depositRewards } = useWriteContract();
+
+  // Approve CUSD for deposit
+  const approveCUSDForDeposit = async () => {
+    if (!mintedNFT) return;
+    const rewardInt = Math.floor(Number(mintedNFT.reward) / 10);
+    const reward = rewardInt * 10 ** 18;
+
+    try {
+      setLoading(true);
+      await writeCUSD({
+        address: cUSDAddress,
+        abi: CUSDABI,
+        functionName: "approve",
+        args: [contractAddress, reward],
+      });
+      console.log("Approval for deposit set successfully");
+      setIsApprovedForDeposit(true);
+
+    } catch (error) {
+      console.error("Approval for deposit error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const depositRewardsVault = async () => {
     if (!mintedNFT) return;
     const rewardInt = Math.floor(Number(mintedNFT.reward)/10);
     const reward = rewardInt * 10**18;
     console.log("reward: ", rewardInt);
-
-    //Approve
-    /*try {
-      await writeCUSD({
-        address: cUSDAddress,
-        abi: CUSDABI,
-        functionName: 'approve',
-        args: [vaultAddress, reward],
-      });
-    }catch (error) {
-      console.error("Vault transfer error:", error);
-    }*/
-
-    setLoading(true);
 
     //Deposit
     try {
@@ -174,7 +186,7 @@ const NFT = () => {
     }
 
     let elapsedTime = 0;
-    const pollInterval = 1000; // 10 seconds
+    const pollInterval = 1000; 
     let requestIdUpdated = false;
     let currentRequestId = requestId;
     console.log("init requestId: ", requestId);
@@ -183,18 +195,21 @@ const NFT = () => {
     setIsApproved(false);
 
     //Wait to get requestId back
-    while (elapsedTime < 10000 && !requestIdUpdated) {
+    while (elapsedTime < 100000 && !requestIdUpdated) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       elapsedTime += pollInterval;
 
-      const result = await refetchRequestId();
-      currentRequestId = result?.data ? result.data.toString() : requestId;
-      console.log("current requestId: ", currentRequestId);
+      if(elapsedTime >= 30000){
+        const result = await refetchRequestId();
+        currentRequestId = result?.data ? result.data.toString() : requestId;
+        console.log("current requestId: ", currentRequestId);
 
-      if (currentRequestId !== requestId) {
-        requestIdUpdated = true;
-        setRequestId(currentRequestId);     
-        break;
+        if (currentRequestId !== requestId) {
+          requestIdUpdated = true;
+          setRequestId(currentRequestId);     
+          break;
+        }
+        console.log("The final requestId is: ", currentRequestId);
       }
     }
 
@@ -260,6 +275,7 @@ const NFT = () => {
               tabIndex={tabIndex}
               handleTabChange={handleTabChange}
               approveCUSD={approveCUSD}
+              approveCUSDForDeposit={approveCUSDForDeposit}
               depositRewardsVault={depositRewardsVault}
               requestRandomW={requestRandomW}
               mintedNFT={mintedNFT}
@@ -268,6 +284,8 @@ const NFT = () => {
               progressMessage={progressMessage}
               isApproved={isApproved} 
               setIsApproved={setIsApproved}
+              isApprovedForDeposit ={isApproved}
+              setIsApprovedForDeposit={setIsApprovedForDeposit}
               fetchLastMintedNFT={fetchLastMintedNFT}
             />
           </motion.div>
