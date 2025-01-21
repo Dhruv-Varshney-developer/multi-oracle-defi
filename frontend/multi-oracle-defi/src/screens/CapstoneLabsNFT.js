@@ -199,7 +199,7 @@ const NFT = () => {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       elapsedTime += pollInterval;
 
-      if(elapsedTime >= 30000){
+      if(elapsedTime >= 80000){
         const result = await refetchRequestId();
         currentRequestId = result?.data ? result.data.toString() : requestId;
         console.log("current requestId: ", currentRequestId);
