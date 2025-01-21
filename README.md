@@ -96,7 +96,7 @@ A sophisticated NFT minting system utilizing Chainlink VRF for verifiably random
  - Integrated with Push Protocol, Chainlink Price Feeds, and OpenZeppelin Defender.
 - NFT Minter : `0x9044B578C1F2F3E9cb3e478FdfB39A75fE2f1997`
   - NFT (ERC 721) contract integrated with Chainlink VRF, IPFS, vault and CUSD contracts.
-- Vault: `0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5`
+- Vault: `0x367a68d69825b0A2A56C3F97B2eFf2942d2B1032`
  - ERC 4626 contract integrated with chainlink automation and CUSD contract.
 
 ## Live Implementation
