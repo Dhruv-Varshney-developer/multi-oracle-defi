@@ -12,7 +12,7 @@ import { Box, Card, Alert, Typography, Container, Grid, Tooltip } from "@mui/mat
 import Snackbar from '@mui/material/Snackbar';
 import { AccountBalance, InfoRounded, TrendingUp } from "@mui/icons-material";
 import VaultABI from "../utils/Vaultabi.json";
-import SimpleUSDTokenABI from "../utils/SimpleUSDTokenABI.json";
+import SimpleUSDTokenABI from "../utils/CUSDabi.json";
 import CLogo from '../assets/CLogo.png';
 import { ActionPanel } from "../components/VaultComponents";
 import { InfoCard } from "../components/infoCard";

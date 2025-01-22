@@ -6,6 +6,7 @@ import LendingBorrowing from "./screens/LendingBorrowing";
 import Vault from './screens/Vault';
 import NFT from "./screens/CapstoneLabsNFT";
 import CLogo from "./assets/CLogo.png";
+import VaultTrackerBalance from "./components/VaultBalanceTracker";
 
 const App = () => {
   const { isConnected } = useAccount();
@@ -63,7 +64,7 @@ const App = () => {
           </>
         )}
       </div>
-
+      {isConnected && <VaultTrackerBalance />}
       {/* Tabs */}
       {isConnected && (
         <div
