@@ -74,6 +74,5 @@
   },
   "resolutions": {
     "@metamask/sdk": "0.30.0"
-  },
-  "proxy": "https://1rpc.io/sepolia"
+  }
 }
