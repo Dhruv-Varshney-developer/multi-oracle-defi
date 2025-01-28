@@ -5,7 +5,7 @@ import NotificationPanel from "./NotificationPanel";
 import VaultBalanceTrackerABI from "../utils/VaultBalanceTrackerabi.json"; 
 
 //Contract addresses
-const vaultTrackerAddress = '0x121c79f27eaa2f347c07d5FA5b3d57a4E360b8f7';
+const vaultTrackerAddress = '0xCF1577CD47CE229BA96a54cad10cD00D507Cf3da';
 
 const VaultTrackerBalance = () => {
   
