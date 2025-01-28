@@ -92,7 +92,7 @@ const Vault = () => {
   });
 
   const handleCopy = () => {
-    const textToCopy = "0x002d7Ffa2f24Fb2DCDeB3f29C163fBBb87D8B4c5";
+    const textToCopy = "0x367a68d69825b0A2A56C3F97B2eFf2942d2B1032";
     navigator.clipboard.writeText(textToCopy).then(() => {
       setOpen(true);
     });
